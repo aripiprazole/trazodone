@@ -4,6 +4,7 @@ use llvm_sys::core::*;
 use llvm_sys::error::LLVMDisposeErrorMessage;
 use llvm_sys::prelude as llvm;
 use crate::cstr::cstr;
+use crate::tree::Rule;
 
 pub struct Codegen {
     pub context: llvm::LLVMContextRef,
@@ -31,7 +32,6 @@ impl Codegen {
     pub fn codegen_rulebook(&mut self, rule_book: hvm::language::rulebook::RuleBook) {
         for (name, (_, group)) in rule_book.rule_group {
             for rule in group {
-                self.codegen_rule(name.clone(), rule);
             }
         }
     }
@@ -47,23 +47,6 @@ impl Codegen {
             );
 
             main
-        }
-    }
-
-    pub fn codegen(&mut self, term: Term) -> llvm::LLVMValueRef {
-        unsafe {
-            match term {
-                Term::Var { .. } => todo!(),
-                Term::Dup { .. } => todo!(),
-                Term::Sup { .. } => todo!(),
-                Term::Let { .. } => todo!(),
-                Term::Lam { .. } => todo!(),
-                Term::App { .. } => todo!(),
-                Term::Ctr { .. } => todo!(),
-                Term::U6O { numb } => LLVMConstInt(LLVMInt64Type(), numb, 0),
-                Term::F6O { numb } => LLVMConstInt(LLVMInt64Type(), numb, 0),
-                Term::Op2 { .. } => todo!(),
-            }
         }
     }
 
