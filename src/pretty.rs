@@ -1,11 +1,17 @@
-use std::fmt::Result;
+use std::fmt::{Debug, Result};
 use std::fmt::{Display, Formatter};
 
 pub use crate::spec::*;
 
-pub struct PrettyBox<'a, P: Pretty + ?Sized>(usize, &'a P);
+pub struct Print<'a, P: Pretty + ?Sized>(usize, &'a P);
 
-impl<'a, P: Pretty> Display for PrettyBox<'a, P> {
+impl<'a, P: Pretty> Display for Print<'a, P> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        self.1.pretty(self.0, f)
+    }
+}
+
+impl<'a, P: Pretty> Debug for Print<'a, P> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         self.1.pretty(self.0, f)
     }
@@ -14,25 +20,40 @@ impl<'a, P: Pretty> Display for PrettyBox<'a, P> {
 pub trait Pretty {
     fn pretty(&self, indent: usize, f: &mut Formatter) -> Result;
 
-    fn boxed(&self) -> PrettyBox<'_, Self>
+    fn boxed(&self) -> Print<'_, Self>
     where
         Self: Sized,
     {
-        PrettyBox(0, self)
+        Print(0, self)
     }
 
-    fn indented(&self, indent: usize) -> PrettyBox<'_, Self>
+    fn indented(&self, indent: usize) -> Print<'_, Self>
     where
         Self: Sized,
     {
-        PrettyBox(indent, self)
+        Print(indent, self)
     }
 
     fn dump(&self)
     where
         Self: Sized,
     {
-        println!("{}", PrettyBox(0, self));
+        println!("{}", Print(0, self));
+    }
+}
+
+impl Debug for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Block(instructions) => {
+                writeln!(f, "{{")?;
+                for instruction in instructions {
+                    instruction.pretty(2, f)?;
+                    writeln!(f)?;
+                }
+                write!(f, "}}")
+            }
+        }
     }
 }
 
@@ -91,9 +112,17 @@ impl Pretty for Term {
         match self {
             Term::True => write!(f, "true"),
             Term::False => write!(f, "false"),
-            Term::GetTag => write!(f, "get-tag"),
+            Term::Tag(tag) => write!(f, "{tag:?}"),
+            Term::Ext(tag) => write!(f, "{tag:?}"),
+            Term::Equal(lhs, rhs) => write!(f, "{} == {}", lhs.boxed(), rhs.boxed()),
+            Term::LogicalOr(lhs, rhs) => write!(f, "{} || {}", lhs.boxed(), rhs.boxed()),
+            Term::LogicalAnd(lhs, rhs) => write!(f, "{} && {}", lhs.boxed(), rhs.boxed()),
             Term::Ref(name) => write!(f, "@{name}"),
             Term::Create(value) => write!(f, "create {}", value.boxed()),
+            Term::ArityOf(ArityOf { term }) => write!(f, "arity-of {}", term.boxed()),
+            Term::GetNumber(GetNumber { term }) => write!(f, "get-number {}", term.boxed()),
+            Term::GetExt(GetExt { term }) => write!(f, "get-ext {}", term.boxed()),
+            Term::GetTag(GetTag { term }) => write!(f, "get-tag {}", term.boxed()),
             Term::Alloc(Alloc { size }) => write!(f, "alloc {size}"),
             Term::GetPosition(GetPosition { position }) => write!(f, "get-position {position}"),
             Term::LoadArgument(LoadArgument { argument_index }) => {
@@ -187,7 +216,7 @@ impl Pretty for Instruction {
             ),
             Instruction::If(If {
                 condition,
-                then,
+                then: Block(then),
                 otherwise,
             }) => {
                 writeln!(f, "{:>indent$}if {} {{", "", condition.boxed())?;
@@ -196,7 +225,7 @@ impl Pretty for Instruction {
                     writeln!(f)?;
                 }
                 write!(f, "{:>indent$}}}", "")?;
-                if let Some(otherwise) = otherwise {
+                if let Some(Block(otherwise)) = otherwise {
                     writeln!(f, " else {{")?;
                     for instruction in otherwise {
                         instruction.pretty(indent + 2, f)?;
@@ -216,12 +245,12 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let instructions = vec![
-            Instruction::binding("arg_0", Term::load_argument(0)),
-            Instruction::binding("arg_1", Term::load_argument(1)),
+        let instructions = Block(vec![
+            Instruction::binding("arg_0", Term::load_arg(0)),
+            Instruction::binding("arg_1", Term::load_arg(1)),
             Instruction::cond(
                 Term::True,
-                vec![
+                Block(vec![
                     Instruction::IncrementCost,
                     Instruction::binding("ctr_0", Term::get_position(0)),
                     Instruction::link(Position::initial("ctr_0"), Term::Ref("arg_1".into())),
@@ -235,14 +264,12 @@ mod tests {
                     ),
                     Instruction::link(Position::Host, Term::reference("done")),
                     Instruction::ret(Term::False),
-                ],
+                ]),
                 None,
             ),
             Instruction::ret(Term::False),
-        ];
+        ]);
 
-        for instruction in instructions {
-            instruction.dump();
-        }
+        println!("{instructions:?}");
     }
 }

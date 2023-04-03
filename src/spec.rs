@@ -1,20 +1,33 @@
+use std::ops::Deref;
+
 use hvm::syntax::Oper;
 
-pub type Block = Vec<Instruction>;
+use crate::tree;
+use crate::tree::{Constructor, Parameter, Rule};
 
-#[derive(Debug)]
+#[derive(Default, Clone)]
+pub struct Block(pub Vec<Instruction>);
+
+#[derive(Debug, Clone)]
+pub struct RuleGroup {
+    pub name: String,
+    pub hvm_visit: Block,
+    pub hvm_apply: Block,
+}
+
+#[derive(Debug, Clone)]
 pub struct Color(pub u64);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct U60(pub u64);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct F60(pub f64);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionId(pub String);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Position {
     Named {
         reference_name: String,
@@ -23,50 +36,50 @@ pub enum Position {
     Host,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IntValue(pub Value);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoadArgument {
     pub argument_index: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Link {
     pub position: Position,
     pub term: Term,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Collect {
     pub term: Term,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Free {
     pub position: Position,
     pub arity: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Let {
     pub name: String,
     pub value: Term,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct If {
     pub condition: Term,
     pub then: Block,
     pub otherwise: Option<Block>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WHNF {
     pub strictness_index: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Instruction {
     If(If),
     Let(Let),
@@ -79,14 +92,14 @@ pub enum Instruction {
     IncrementCost,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Binary {
     pub lhs: Box<Term>,
     pub op: Oper,
     pub rhs: Box<Term>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Dp0(Color, Position),
     Dp1(Color, Position),
@@ -103,25 +116,49 @@ pub enum Value {
     Erased,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TakeArgument {
     pub position: Position,
     pub argument_index: Box<Term>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Alloc {
     pub size: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GetPosition {
     pub position: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct GetTag {
+    pub term: Box<Term>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GetNumber {
+    pub term: Box<Term>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GetExt {
+    pub term: Box<Term>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArityOf {
+    pub term: Box<Term>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Term {
-    GetTag,
+    Tag(Tag),
+    ArityOf(ArityOf),
+    GetExt(GetExt),
+    GetNumber(GetNumber),
+    GetTag(GetTag),
     GetPosition(GetPosition),
     Create(Value),
     TakeArgument(TakeArgument),
@@ -129,12 +166,16 @@ pub enum Term {
     Alloc(Alloc),
 
     // * Internal
+    Ext(String),
+    Equal(Box<Term>, Box<Term>),
+    LogicalOr(Box<Term>, Box<Term>),
+    LogicalAnd(Box<Term>, Box<Term>),
     Ref(String),
     True,
     False,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Tag {
     DUP0,
     DUP1,
@@ -152,7 +193,7 @@ pub enum Tag {
     NIL,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Operation {
     Add,
     Sub,
@@ -172,21 +213,141 @@ pub enum Operation {
     Neq,
 }
 
+pub type Result<T> = std::result::Result<T, String>;
+
+impl RuleGroup {
+    pub fn specialize(group: tree::RuleGroup) -> Result<Self> {
+        Ok(Self {
+            name: group.name.clone(),
+            hvm_visit: Block::default(),
+            hvm_apply: Self::specialize_hvm_apply(&group)?,
+        })
+    }
+
+    pub fn specialize_hvm_apply(group: &tree::RuleGroup) -> Result<Block> {
+        let rules = group.rules.clone();
+        let strict_parameters = group.strict_parameters.clone();
+
+        let mut hvm_apply = vec![];
+
+        if rules.is_empty() {
+            return Err("no rules".into());
+        }
+
+        for i in 0..strict_parameters.len() {
+            hvm_apply.push(Instruction::binding(
+                &format!("arg_{i}"),
+                Term::load_arg(i as u64),
+            ));
+        }
+
+        // TODO: superpose
+
+        for rule in rules {
+            for (i, parameter) in rule.parameters.iter().cloned().enumerate() {
+                let pattern_matching = Self::build_pattern_matching(&group, i, parameter);
+
+                if let Term::True = pattern_matching {
+                    Self::build_if_pattern_matched(&mut hvm_apply, &rule);
+                } else {
+                    hvm_apply.push(Instruction::If(If {
+                        condition: pattern_matching,
+                        then: Self::build_if_pattern_matched(&mut vec![], &rule),
+                        otherwise: None,
+                    }));
+                }
+
+            }
+        }
+
+        Ok(Block(hvm_apply))
+    }
+
+    pub fn build_if_pattern_matched(block: &mut Vec<Instruction>, rule: &Rule) -> Block {
+        let mut block = vec![Instruction::IncrementCost];
+
+        Block(block)
+    }
+
+    pub fn build_pattern_matching(group: &tree::RuleGroup, i: usize, parameter: Parameter) -> Term {
+        let argument = Term::reference(&format!("arg_{i}"));
+
+        match parameter {
+            Parameter::U60(value) => Term::logical_and(
+                Term::equal(Term::get_tag(argument), Term::Tag(Tag::U60)),
+                Term::equal(Term::get_num(Term::load_arg(0)), Term::create_u60(value)),
+            ),
+            Parameter::F60(value) => Term::logical_and(
+                Term::equal(Term::get_tag(argument), Term::Tag(Tag::F60)),
+                Term::equal(Term::get_num(Term::load_arg(0)), Term::create_f60(value)),
+            ),
+            Parameter::Constructor(Constructor { name, .. }) => Term::logical_and(
+                Term::equal(Term::get_tag(argument), Term::Tag(Tag::CONSTRUCTOR)),
+                Term::equal(Term::get_num(Term::load_arg(0)), Term::ext(&name)),
+            ),
+            Parameter::Atom(..) if group.strict_parameters[i] => {
+                // TODO: hoas for kind2
+
+                Term::logical_or(
+                    Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
+                    Term::logical_or(
+                        Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
+                        Term::equal(Term::get_tag(argument), Term::Tag(Tag::F60)),
+                    ),
+                )
+            }
+            _ => Term::True,
+        }
+    }
+}
+
 impl Term {
     pub fn get_position(position: u64) -> Self {
         Term::GetPosition(GetPosition { position })
     }
 
-    pub fn load_argument(argument_index: u64) -> Self {
+    pub fn load_arg(argument_index: u64) -> Self {
         Term::LoadArgument(LoadArgument { argument_index })
     }
 
+    pub fn get_tag(term: Term) -> Self {
+        Term::GetTag(GetTag { term: term.into() })
+    }
+
+    pub fn get_num(term: Term) -> Self {
+        Term::GetNumber(GetNumber { term: term.into() })
+    }
+
+    pub fn get_ext(term: Term) -> Self {
+        Term::GetExt(GetExt { term: term.into() })
+    }
+
+    pub fn arity_of(term: Term) -> Self {
+        Term::ArityOf(ArityOf { term: term.into() })
+    }
+
+    // internal
     pub fn reference(name: &str) -> Self {
         Term::Ref(name.into())
     }
 
-    // create
+    pub fn equal(lhs: Term, rhs: Term) -> Self {
+        Term::Equal(lhs.into(), rhs.into())
+    }
 
+    pub fn logical_or(lhs: Term, rhs: Term) -> Self {
+        Term::LogicalOr(lhs.into(), rhs.into())
+    }
+
+    pub fn logical_and(lhs: Term, rhs: Term) -> Self {
+        Term::LogicalAnd(lhs.into(), rhs.into())
+    }
+
+    pub fn ext(ext: &str) -> Self {
+        Term::Ext(ext.into())
+    }
+
+    // create
     pub fn create_dp0(color: u64, position: Position) -> Self {
         Term::Create(Value::Dp0(Color(color), position))
     }
@@ -216,7 +377,14 @@ impl Term {
     }
 
     pub fn create_binary(lhs: Term, op: Oper, rhs: Term, position: Position) -> Self {
-        Term::Create(Value::Binary(Binary { lhs: Box::new(lhs), op, rhs: Box::new(rhs) }, position))
+        Term::Create(Value::Binary(
+            Binary {
+                lhs: Box::new(lhs),
+                op,
+                rhs: Box::new(rhs),
+            },
+            position,
+        ))
     }
 
     pub fn create_u60(u60: u64) -> Self {
@@ -291,5 +459,15 @@ impl Position {
 impl FunctionId {
     pub fn new(name: &str) -> Self {
         FunctionId(name.into())
+    }
+}
+
+impl Deref for Block {
+    type Target = Vec<Instruction>;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Block(instructions) => instructions,
+        }
     }
 }
