@@ -10,13 +10,16 @@ pub type Result<T> = std::result::Result<T, String>;
 
 impl Rule {
     pub fn specialize(index: u64, book: RuleBook, rule: hvm::syntax::Rule) -> Result<Self> {
-        let hvm::Term::Ctr { name, args } = rule.lhs;
+        let hvm::Term::Ctr { name, args } = *rule.lhs else {
+            return Err(format!("Rule {} is not a constructor", index));
+        };
+        let rhs = *rule.rhs;
 
         Ok(Self {
             name,
             strict: book.id_to_smap.contains_key(&index),
             patterns: Self::specialize_parameters(args)?,
-            value: Self::specialize_term(*rule.rhs)?,
+            value: Self::specialize_term(rhs)?,
         })
     }
 
@@ -36,12 +39,17 @@ impl Rule {
             hvm::Term::App { box func, box argm } => Ok(Term::App(App {
                 global_name: None,
                 callee: Self::specialize_term(func)?.into(),
-                arguments: Self::specialize_term(argm)?.into(),
+                arguments: vec![Self::specialize_term(argm)?],
             })),
             hvm::Term::Ctr { name, args } => Ok(Term::App(App {
                 global_name: Some(name.clone()),
                 callee: Term::Atom(name).into(),
-                arguments: args.iter().map(Self::specialize_term).collect(),
+                arguments: args
+                    .iter()
+                    .map(Deref::deref)
+                    .map(Clone::clone)
+                    .map(Self::specialize_term)
+                    .collect::<Result<_>>()?,
             })),
             hvm::Term::Let {
                 name,
@@ -67,37 +75,39 @@ impl Rule {
                 oper,
                 box val0,
                 box val1,
-            } => Term::Binary(Binary {
+            } => Ok(Term::Binary(Binary {
                 lhs: Self::specialize_term(val0)?.into(),
                 op: oper,
                 rhs: Self::specialize_term(val1)?.into(),
-            }),
+            })),
         }
     }
 
-    pub fn specialize_parameters(parameters: Vec<Box<hvm::syntax::Term>>) {
+    pub fn specialize_parameters(
+        parameters: Vec<Box<hvm::syntax::Term>>,
+    ) -> Result<Vec<Parameter>> {
         parameters
             .iter()
             .map(Deref::deref)
             .map(|term| match term {
-                hvm::Term::Var { name } => Parameter::Atom(name.clone()),
-                hvm::Term::Ctr { name, args } => Parameter::Constructor(Constructor {
+                hvm::Term::Var { name } => Ok(Parameter::Atom(name.clone())),
+                hvm::Term::Ctr { name, args } => Ok(Parameter::Constructor(Constructor {
                     name: name.clone(),
                     arity: args.len() as u64,
                     flatten_patterns: Self::specialize_flatten_patterns(args)?,
-                }),
-                hvm::Term::U6O { numb } => Parameter::Const(numb.clone()),
+                })),
+                hvm::Term::U6O { numb } => Ok(Parameter::Const(numb.clone())),
                 _ => Err("Invalid pattern".into()),
             })
-            .collect()
+            .collect::<Result<_>>()
     }
 
-    fn specialize_flatten_patterns(flatten_patterns: &Vec<Box<hvm::Term>>) -> Vec<Pattern> {
+    fn specialize_flatten_patterns(flatten_patterns: &Vec<Box<hvm::Term>>) -> Result<Vec<Pattern>> {
         flatten_patterns
             .iter()
             .map(Deref::deref)
             .map(|term| match term {
-                hvm::Term::Var { name } => Pattern::Atom(name.clone()),
+                hvm::Term::Var { name } => Ok(Pattern::Atom(name.clone())),
                 _ => Err("Invalid flatten pattern".into()),
             })
             .collect()

@@ -70,6 +70,7 @@ pub struct Ref {
     pub index: u64,
 }
 
+#[derive(Debug)]
 pub struct Binary {
     pub lhs: Box<Term>,
     pub op: Oper,
@@ -81,6 +82,7 @@ pub enum Term {
     U60(u64),
     F60(u64),
 
+    Let(Let),
     App(App),
     Atom(String),
     Duplicate(Duplicate),

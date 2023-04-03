@@ -1,13 +1,12 @@
 #![feature(box_patterns)]
 
-use hvm::syntax::Term;
-
 pub mod codegen;
 pub mod cstr;
 pub mod tree;
 pub mod compile;
 pub mod phases;
 pub mod spec;
+pub mod pretty;
 
 fn main() {
     let example = std::fs::read_to_string("example.hvm").unwrap();

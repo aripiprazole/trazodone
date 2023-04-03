@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+use std::fmt::Debug;
 use llvm_sys::analysis::LLVMVerifierFailureAction::LLVMReturnStatusAction;
 use llvm_sys::analysis::LLVMVerifyModule;
 use llvm_sys::core::*;
