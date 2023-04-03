@@ -1,8 +1,6 @@
-use std::ffi::CStr;
-use std::fmt::Debug;
+#![feature(box_patterns)]
 
-use hvm::rulebook::RuleGroup;
-use hvm::syntax::{Rule, Term};
+use hvm::syntax::Term;
 
 pub mod codegen;
 pub mod cstr;

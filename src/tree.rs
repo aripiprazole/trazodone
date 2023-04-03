@@ -41,14 +41,13 @@ pub struct Duplicate {
 pub struct App {
     pub global_name: Option<String>,
     pub callee: Box<Term>,
-    pub argument: Box<Term>,
+    pub arguments: Vec<Term>,
 }
 
 #[derive(Debug)]
 pub struct Let {
     pub name: String,
     pub value: Box<Term>,
-    pub argument: Vec<Term>,
     pub body: Box<Term>,
 }
 
