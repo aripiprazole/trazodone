@@ -45,7 +45,7 @@ pub trait Pretty {
 impl Debug for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Block(instructions) => {
+            Block { instructions } => {
                 writeln!(f, "{{")?;
                 for instruction in instructions {
                     instruction.pretty(2, f)?;
@@ -112,6 +112,7 @@ impl Pretty for Term {
         match self {
             Term::True => write!(f, "true"),
             Term::False => write!(f, "false"),
+            Term::Current => write!(f, "^current-term"),
             Term::Tag(tag) => write!(f, "{tag:?}"),
             Term::Ext(tag) => write!(f, "{tag:?}"),
             Term::Equal(lhs, rhs) => write!(f, "{} == {}", lhs.boxed(), rhs.boxed()),
@@ -124,7 +125,9 @@ impl Pretty for Term {
             Term::GetExt(GetExt { term }) => write!(f, "get-ext {}", term.boxed()),
             Term::GetTag(GetTag { term }) => write!(f, "get-tag {}", term.boxed()),
             Term::Alloc(Alloc { size }) => write!(f, "alloc {size}"),
-            Term::GetPosition(GetPosition { position }) => write!(f, "get-position {position}"),
+            Term::GetPosition(GetPosition { term, position }) => {
+                write!(f, "get-position {} {position}", term.boxed())
+            }
             Term::LoadArgument(LoadArgument { argument_index }) => {
                 write!(f, "load-argument {argument_index}")
             }
@@ -216,18 +219,18 @@ impl Pretty for Instruction {
             ),
             Instruction::If(If {
                 condition,
-                then: Block(then),
+                then,
                 otherwise,
             }) => {
                 writeln!(f, "{:>indent$}if {} {{", "", condition.boxed())?;
-                for instruction in then {
+                for instruction in &then.instructions {
                     instruction.pretty(indent + 2, f)?;
                     writeln!(f)?;
                 }
                 write!(f, "{:>indent$}}}", "")?;
-                if let Some(Block(otherwise)) = otherwise {
+                if let Some(otherwise) = otherwise {
                     writeln!(f, " else {{")?;
-                    for instruction in otherwise {
+                    for instruction in &otherwise.instructions {
                         instruction.pretty(indent + 2, f)?;
                         writeln!(f)?;
                     }
@@ -245,14 +248,14 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let instructions = Block(vec![
+        let instructions = Block::new(vec![
             Instruction::binding("arg_0", Term::load_arg(0)),
             Instruction::binding("arg_1", Term::load_arg(1)),
             Instruction::cond(
                 Term::True,
-                Block(vec![
+                Block::new(vec![
                     Instruction::IncrementCost,
-                    Instruction::binding("ctr_0", Term::get_position(0)),
+                    Instruction::binding("ctr_0", Term::get_position(Term::Current, 0)),
                     Instruction::link(Position::initial("ctr_0"), Term::Ref("arg_1".into())),
                     Instruction::link(Position::new("ctr_0", 1), Term::Ref("arg_0".into())),
                     Instruction::binding(

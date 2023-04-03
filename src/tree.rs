@@ -107,8 +107,11 @@ pub enum Term {
 pub type Result<T> = std::result::Result<T, String>;
 
 impl RuleGroup {
-    pub fn specialize(name: String, book: hvm::rulebook::RuleBook) -> Result<Self> {
-        let (_id, group) = book.rule_group.get(&name).ok_or(format!("No such group: {name}"))?;
+    pub fn specialize(name: String, book: &hvm::rulebook::RuleBook) -> Result<Self> {
+        let (_id, group) = book
+            .rule_group
+            .get(&name)
+            .ok_or(format!("No such group: {name}"))?;
         let rules = group
             .iter()
             .enumerate()
@@ -119,8 +122,7 @@ impl RuleGroup {
             .name_to_id
             .get(&name)
             .map(|id| book.id_to_smap.get(id).cloned().unwrap_or(vec![]))
-            .unwrap_or(vec![])
-            .clone();
+            .unwrap_or(vec![]);
 
         let strict_index = strict_parameters.iter().filter(|x| **x).count() as u64;
 

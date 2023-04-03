@@ -12,8 +12,12 @@ fn main() {
     let file = hvm::language::syntax::read_file(&example).unwrap();
     let book = hvm::language::rulebook::gen_rulebook(&file);
 
-    let group = tree::RuleGroup::specialize("SwapGT".into(), book).unwrap();
-    let group = spec::RuleGroup::specialize(group).unwrap();
+    let program = book.rule_group.iter().map(|(name, group)| {
+        let group = tree::RuleGroup::specialize(name.clone(), &book).unwrap();
+        let group = spec::RuleGroup::specialize(group).unwrap();
 
-    println!("{:#?}", group);
+        group
+    }).collect::<Vec<_>>();
+
+    println!("{:#?}", program);
 }
