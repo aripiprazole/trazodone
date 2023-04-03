@@ -1,7 +1,7 @@
 use std::fmt::Result;
 use std::fmt::{Display, Formatter};
 
-use crate::spec::*;
+pub use crate::spec::*;
 
 pub struct PrettyBox<'a, P: Pretty + ?Sized>(usize, &'a P);
 
@@ -49,8 +49,8 @@ impl Pretty for F60 {
 }
 
 impl Pretty for FunctionId {
-    fn pretty(&self, indent: usize, f: &mut Formatter) -> Result {
-        self.0.pretty(indent, f)
+    fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
+        write!(f, "#{}", self.0)
     }
 }
 
@@ -60,15 +60,9 @@ impl Pretty for IntValue {
     }
 }
 
-impl Pretty for Position {
-    fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
-        write!(f, "[{} {}]", self.reference_name, self.gate_index)
-    }
-}
-
 impl Pretty for Color {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
-        write!(f, "#color {}", self.0)
+        write!(f, "&color {}", self.0)
     }
 }
 
@@ -78,23 +72,39 @@ impl Pretty for Binary {
     }
 }
 
+impl Pretty for Position {
+    fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
+        match self {
+            Position::Named {
+                reference_name,
+                gate_index,
+            } => {
+                write!(f, "[@{reference_name} {gate_index}]")
+            }
+            Position::Host => write!(f, "[^host]"),
+        }
+    }
+}
+
 impl Pretty for Term {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
         match self {
-            Term::GetTag => write!(f, "(get-tag)"),
-            Term::Ref(name) => write!(f, "($ {name})"),
-            Term::Create(value) => write!(f, "(create {})", value.boxed()),
-            Term::Alloc(Alloc { size }) => write!(f, "(alloc {size})"),
-            Term::LoadArgument(LoadArgument {
-                term,
-                argument_index,
-            }) => write!(f, "(load-argument {} {})", term.boxed(), argument_index),
+            Term::True => write!(f, "true"),
+            Term::False => write!(f, "false"),
+            Term::GetTag => write!(f, "get-tag"),
+            Term::Ref(name) => write!(f, "@{name}"),
+            Term::Create(value) => write!(f, "create {}", value.boxed()),
+            Term::Alloc(Alloc { size }) => write!(f, "alloc {size}"),
+            Term::GetPosition(GetPosition { position }) => write!(f, "get-position {position}"),
+            Term::LoadArgument(LoadArgument { argument_index }) => {
+                write!(f, "load-argument {argument_index}")
+            }
             Term::TakeArgument(TakeArgument {
                 position,
                 argument_index,
             }) => write!(
                 f,
-                "(take-argument {} {})",
+                "take-argument {} {}",
                 position.boxed(),
                 argument_index.boxed()
             ),
@@ -105,33 +115,33 @@ impl Pretty for Term {
 impl Pretty for Value {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
         match self {
-            Value::Erased => write!(f, "Erased!"),
-            Value::Lam(position) => write!(f, "(Lam! {})", position.boxed()),
-            Value::App(position) => write!(f, "(App! {})", position.boxed()),
-            Value::U60(u60) => write!(f, "(U60! {})", u60.boxed()),
-            Value::F60(f60) => write!(f, "(F60! {})", f60.boxed()),
+            Value::Erased => write!(f, "erased!"),
+            Value::Lam(position) => write!(f, "(lam! {})", position.boxed()),
+            Value::App(position) => write!(f, "(app! {})", position.boxed()),
+            Value::U60(u60) => write!(f, "(u60! {})", u60.boxed()),
+            Value::F60(f60) => write!(f, "(f60! {})", f60.boxed()),
             Value::Dp0(color, position) => {
-                write!(f, "(Dp0! {} {})", color.boxed(), position.boxed())
+                write!(f, "(dp0! {} {})", color.boxed(), position.boxed())
             }
             Value::Dp1(color, position) => {
-                write!(f, "(Dp1! {} {})", color.boxed(), position.boxed())
+                write!(f, "(dp1! {} {})", color.boxed(), position.boxed())
             }
             Value::Argument(position) => {
-                write!(f, "(Argument! {})", position.boxed())
+                write!(f, "(argument! {})", position.boxed())
             }
             Value::Atom(position) => {
-                write!(f, "(Atom! {})", position.boxed())
+                write!(f, "(atom! {})", position.boxed())
             }
             Value::Super(color, position) => {
-                write!(f, "(Super! {} {})", color.boxed(), position.boxed())
+                write!(f, "(super! {} {})", color.boxed(), position.boxed())
             }
             Value::Binary(binary, position) => {
-                write!(f, "(Binary! {} {})", binary.boxed(), position.boxed())
+                write!(f, "(binary! {} {})", binary.boxed(), position.boxed())
             }
             Value::Function(function_id, position) => {
                 write!(
                     f,
-                    "(Function! {} {})",
+                    "(function! {} {})",
                     function_id.boxed(),
                     position.boxed()
                 )
@@ -139,7 +149,7 @@ impl Pretty for Value {
             Value::Constructor(function_id, position) => {
                 write!(
                     f,
-                    "(Constructor! {} {})",
+                    "(constructor! {} {})",
                     function_id.boxed(),
                     position.boxed()
                 )
@@ -162,6 +172,12 @@ impl Pretty for Instruction {
             Instruction::WHNF(WHNF { strictness_index }) => {
                 write!(f, "{:>indent$}whnf {strictness_index};", "")
             }
+            Instruction::Let(Let { name, value }) => {
+                write!(f, "{:>indent$}let {name} = {};", "", value.boxed())
+            }
+            Instruction::Return(term) => {
+                write!(f, "{:>indent$}return {};", "", term.boxed())
+            }
             Instruction::Link(Link { position, term }) => write!(
                 f,
                 "{:>indent$}link {} {};",
@@ -169,23 +185,22 @@ impl Pretty for Instruction {
                 position.boxed(),
                 term.boxed()
             ),
-            Instruction::Let(Let { name, value }) => {
-                write!(f, "{:>indent$}let ${name} = {};", "", value.boxed())
-            }
             Instruction::If(If {
                 condition,
                 then,
                 otherwise,
             }) => {
-                write!(f, "{:>indent$}if {} {{", "", condition.boxed())?;
+                writeln!(f, "{:>indent$}if {} {{", "", condition.boxed())?;
                 for instruction in then {
                     instruction.pretty(indent + 2, f)?;
+                    writeln!(f)?;
                 }
                 write!(f, "{:>indent$}}}", "")?;
                 if let Some(otherwise) = otherwise {
-                    write!(f, " else {{")?;
+                    writeln!(f, " else {{")?;
                     for instruction in otherwise {
                         instruction.pretty(indent + 2, f)?;
+                        writeln!(f)?;
                     }
                     write!(f, "{:>indent$}}}", "")?;
                 }
@@ -201,6 +216,33 @@ mod tests {
 
     #[test]
     fn it_works() {
+        let instructions = vec![
+            Instruction::binding("arg_0", Term::load_argument(0)),
+            Instruction::binding("arg_1", Term::load_argument(1)),
+            Instruction::cond(
+                Term::True,
+                vec![
+                    Instruction::IncrementCost,
+                    Instruction::binding("ctr_0", Term::get_position(0)),
+                    Instruction::link(Position::initial("ctr_0"), Term::Ref("arg_1".into())),
+                    Instruction::link(Position::new("ctr_0", 1), Term::Ref("arg_0".into())),
+                    Instruction::binding(
+                        "done",
+                        Term::create_constructor(
+                            FunctionId::new("AGirl"),
+                            Position::initial("ctr_0"),
+                        ),
+                    ),
+                    Instruction::link(Position::Host, Term::reference("done")),
+                    Instruction::ret(Term::False),
+                ],
+                None,
+            ),
+            Instruction::ret(Term::False),
+        ];
 
+        for instruction in instructions {
+            instruction.dump();
+        }
     }
 }

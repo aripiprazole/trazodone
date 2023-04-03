@@ -32,13 +32,13 @@ impl Codegen {
     }
 
     pub fn codegen_rulebook(&mut self, rule_book: hvm::language::rulebook::RuleBook) {
-        for (name, (_, group)) in rule_book.rule_group {
-            for rule in group {
+        for (_name, (_, group)) in rule_book.rule_group {
+            for _rule in group {
             }
         }
     }
 
-    pub fn codegen_rule(&mut self, name: String, rule: Rule) -> llvm::LLVMValueRef {
+    pub fn codegen_rule(&mut self, _name: String, _rule: Rule) -> llvm::LLVMValueRef {
         unsafe {
             let mut p = [];
             let t = LLVMFunctionType(LLVMInt32TypeInContext(self.context), p.as_mut_ptr(), 0, 0);
