@@ -25,6 +25,7 @@ pub struct Constructor {
 
 #[derive(Debug, Clone)]
 pub enum Parameter {
+    Erased,
     Atom(String),
     U60(u64),
     F60(f64),
@@ -217,6 +218,7 @@ impl Rule {
             .iter()
             .map(Deref::deref)
             .map(|term| match term {
+                hvm::Term::Var { name } if name == "*" => Ok(Parameter::Erased),
                 hvm::Term::Var { name } => Ok(Parameter::Atom(name.clone())),
                 hvm::Term::Ctr { name, args } => Ok(Parameter::Constructor(Constructor {
                     name: name.clone(),
@@ -234,6 +236,7 @@ impl Rule {
             .iter()
             .map(Deref::deref)
             .map(|term| match term {
+                hvm::Term::Var { name } if name == "*" => Ok(Pattern::Erased),
                 hvm::Term::Var { name } => Ok(Pattern::Atom(name.clone())),
                 _ => Err("Invalid flatten pattern".into()),
             })

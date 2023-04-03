@@ -217,6 +217,13 @@ pub enum Operation {
     Neq,
 }
 
+#[derive(Debug)]
+pub struct Erase {
+    pub parameter: tree::Parameter,
+    pub index: u64,
+    pub field_index: Option<u64>,
+}
+
 pub type Result<T> = std::result::Result<T, String>;
 
 pub type Insertion<'a> = &'a mut Vec<Instruction>;
@@ -253,16 +260,8 @@ impl RuleGroup {
         // TODO: superpose
 
         for rule in rules {
-            let free = rule
-                .parameters
-                .iter()
-                .enumerate()
-                .filter(|(_, parameter)| matches!(parameter, tree::Parameter::Constructor(..)))
-                .map(|(i, parameter)| match parameter {
-                    tree::Parameter::Constructor(constructor) => (i as u64, constructor.arity),
-                    _ => unreachable!(),
-                })
-                .collect();
+            let free = Self::create_free_vec(&rule);
+            let erase = Self::create_erase_vec(&rule);
 
             let mut match_rule = Term::True;
 
@@ -277,12 +276,14 @@ impl RuleGroup {
             if match_rule.is_true() {
                 let done = Self::build_rule(&mut hvm_apply, &rule);
                 Self::build_link(&mut hvm_apply, done);
-                Self::build_free(&mut hvm_apply, &group, free);
+                Self::build_collect(&mut hvm_apply, erase);
+                Self::build_free(&mut hvm_apply, group, free);
             } else {
                 let mut then = Block::with(Instruction::IncrementCost);
                 let done = Self::build_rule(&mut hvm_apply, &rule);
                 Self::build_link(&mut then.instructions, done);
-                Self::build_free(&mut then.instructions, &group, free);
+                Self::build_collect(&mut then.instructions, erase);
+                Self::build_free(&mut then.instructions, group, free);
 
                 hvm_apply.push(Instruction::If(If {
                     condition: match_rule,
@@ -295,6 +296,45 @@ impl RuleGroup {
         Ok(Block::new(hvm_apply))
     }
 
+    pub fn create_free_vec(rule: &tree::Rule) -> FreeVec {
+        rule.parameters
+            .iter()
+            .enumerate()
+            .flat_map(|(i, parameter)| match parameter {
+                tree::Parameter::Constructor(constructor) => {
+                    vec![(i as u64, constructor.arity)]
+                }
+                _ => vec![],
+            })
+            .collect()
+    }
+
+    pub fn create_erase_vec(rule: &tree::Rule) -> Vec<Erase> {
+        rule.parameters
+            .iter()
+            .enumerate()
+            .flat_map(|(index, parameter)| match parameter {
+                tree::Parameter::Erased => vec![Erase {
+                    parameter: parameter.clone(),
+                    index: index as u64,
+                    field_index: None,
+                }],
+                tree::Parameter::Constructor(constructor) => constructor
+                    .flatten_patterns
+                    .iter()
+                    .filter(|pattern| matches!(pattern, tree::Pattern::Erased))
+                    .enumerate()
+                    .map(|(field_index, pattern)| Erase {
+                        parameter: parameter.clone(),
+                        index: index as u64,
+                        field_index: Some(field_index as u64),
+                    })
+                    .collect::<Vec<_>>(),
+                _ => vec![],
+            })
+            .collect()
+    }
+
     pub fn build_rule(_block: Insertion, _rule: &tree::Rule) -> Term {
         // TODO
         Term::True
@@ -302,6 +342,18 @@ impl RuleGroup {
 
     pub fn build_link(block: Insertion, done: Term) {
         block.push(Instruction::link(Position::Host, done));
+    }
+
+    pub fn build_collect(block: Insertion, erase: Vec<Erase>) {
+        for term in erase {
+            let index = term.index;
+            let argument = match term.field_index {
+                Some(field_index) => Term::reference(&format!("arg_{index}_{field_index}")),
+                None => Term::reference(&format!("arg_{index}")),
+            };
+
+            block.push(Instruction::collect(argument));
+        }
     }
 
     pub fn build_free(block: Insertion, rule: &tree::RuleGroup, free: FreeVec) {
@@ -504,6 +556,10 @@ impl Instruction {
 
     pub fn ret(term: Term) -> Self {
         Instruction::Return(term)
+    }
+
+    pub fn collect(term: Term) -> Self {
+        Instruction::Collect(Collect { term })
     }
 }
 
