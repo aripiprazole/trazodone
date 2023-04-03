@@ -1,23 +1,21 @@
 #![feature(box_patterns)]
 
+use crate::phases::Transform;
+
 pub mod codegen;
-pub mod cstr;
-pub mod tree;
 pub mod compile;
-pub mod spec;
+pub mod cstr;
+pub mod ir;
+pub mod phases;
 pub mod pretty;
+pub mod syntax;
 
 fn main() {
     let example = std::fs::read_to_string("example.hvm").unwrap();
     let file = hvm::language::syntax::read_file(&example).unwrap();
     let book = hvm::language::rulebook::gen_rulebook(&file);
 
-    let program = book.rule_group.iter().map(|(name, group)| {
-        let group = tree::RuleGroup::specialize(name.clone(), &book).unwrap();
-        let group = spec::RuleGroup::specialize(group).unwrap();
-
-        group
-    }).collect::<Vec<_>>();
-
-    println!("{:#?}", program);
+    for group in book.transform().unwrap() {
+        println!("{:#?}", group.transform().unwrap());
+    }
 }

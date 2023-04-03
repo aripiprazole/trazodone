@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use hvm::syntax::Oper;
 
-use crate::tree;
+use crate::syntax;
 
 #[derive(Default, Clone)]
 pub struct Block {
@@ -219,201 +219,12 @@ pub enum Operation {
 
 #[derive(Debug)]
 pub struct Erase {
-    pub parameter: tree::Parameter,
+    pub parameter: syntax::Parameter,
     pub index: u64,
     pub field_index: Option<u64>,
 }
 
 pub type Result<T> = std::result::Result<T, String>;
-
-pub type Insertion<'a> = &'a mut Vec<Instruction>;
-pub type FreeIndex = u64;
-pub type FreeArity = u64;
-pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
-
-impl RuleGroup {
-    pub fn specialize(group: tree::RuleGroup) -> Result<Self> {
-        Ok(Self {
-            name: group.name.clone(),
-            hvm_visit: Block::default(),
-            hvm_apply: Self::specialize_hvm_apply(&group)?,
-        })
-    }
-
-    pub fn specialize_hvm_apply(group: &tree::RuleGroup) -> Result<Block> {
-        let rules = group.rules.clone();
-        let strict_parameters = group.strict_parameters.clone();
-
-        let mut hvm_apply = vec![];
-
-        if rules.is_empty() {
-            return Err("no rules".into());
-        }
-
-        for i in 0..strict_parameters.len() {
-            hvm_apply.push(Instruction::binding(
-                &format!("arg_{i}"),
-                Term::load_arg(i as u64),
-            ));
-        }
-
-        // TODO: superpose
-
-        for rule in rules {
-            let free = Self::create_free_vec(&rule);
-            let erase = Self::create_erase_vec(&rule);
-
-            let mut match_rule = Term::True;
-
-            for (i, parameter) in rule.parameters.iter().cloned().enumerate() {
-                match_rule = Term::logical_and(
-                    match_rule,
-                    Self::build_pattern_matching(group, i, parameter),
-                );
-            }
-
-            // TODO: Collect unused variables
-            if match_rule.is_true() {
-                let done = Self::build_rule(&mut hvm_apply, &rule);
-                Self::build_link(&mut hvm_apply, done);
-                Self::build_collect(&mut hvm_apply, erase);
-                Self::build_free(&mut hvm_apply, group, free);
-            } else {
-                let mut then = Block::with(Instruction::IncrementCost);
-                let done = Self::build_rule(&mut hvm_apply, &rule);
-                Self::build_link(&mut then.instructions, done);
-                Self::build_collect(&mut then.instructions, erase);
-                Self::build_free(&mut then.instructions, group, free);
-
-                hvm_apply.push(Instruction::If(If {
-                    condition: match_rule,
-                    then,
-                    otherwise: None,
-                }));
-            }
-        }
-
-        Ok(Block::new(hvm_apply))
-    }
-
-    pub fn create_free_vec(rule: &tree::Rule) -> FreeVec {
-        rule.parameters
-            .iter()
-            .enumerate()
-            .flat_map(|(i, parameter)| match parameter {
-                tree::Parameter::Constructor(constructor) => {
-                    vec![(i as u64, constructor.arity)]
-                }
-                _ => vec![],
-            })
-            .collect()
-    }
-
-    pub fn create_erase_vec(rule: &tree::Rule) -> Vec<Erase> {
-        rule.parameters
-            .iter()
-            .enumerate()
-            .flat_map(|(index, parameter)| match parameter {
-                tree::Parameter::Erased => vec![Erase {
-                    parameter: parameter.clone(),
-                    index: index as u64,
-                    field_index: None,
-                }],
-                tree::Parameter::Constructor(constructor) => constructor
-                    .flatten_patterns
-                    .iter()
-                    .filter(|pattern| matches!(pattern, tree::Pattern::Erased))
-                    .enumerate()
-                    .map(|(field_index, pattern)| Erase {
-                        parameter: parameter.clone(),
-                        index: index as u64,
-                        field_index: Some(field_index as u64),
-                    })
-                    .collect::<Vec<_>>(),
-                _ => vec![],
-            })
-            .collect()
-    }
-
-    pub fn build_rule(_block: Insertion, _rule: &tree::Rule) -> Term {
-        // TODO
-        Term::True
-    }
-
-    pub fn build_link(block: Insertion, done: Term) {
-        block.push(Instruction::link(Position::Host, done));
-    }
-
-    pub fn build_collect(block: Insertion, erase: Vec<Erase>) {
-        for term in erase {
-            let index = term.index;
-            let argument = match term.field_index {
-                Some(field_index) => Term::reference(&format!("arg_{index}_{field_index}")),
-                None => Term::reference(&format!("arg_{index}")),
-            };
-
-            block.push(Instruction::collect(argument));
-        }
-    }
-
-    pub fn build_free(block: Insertion, rule: &tree::RuleGroup, free: FreeVec) {
-        let mut free = free
-            .iter()
-            .map(|(index, arity)| {
-                let argument = Term::reference(&format!("arg_{index}"));
-
-                (Term::get_position(argument, 0), *arity)
-            })
-            .collect::<Vec<_>>();
-
-        free.push((
-            Term::get_position(Term::Current, 0),
-            rule.strict_parameters.len() as u64,
-        ));
-
-        for must_free in free {
-            block.push(Instruction::Free(Free {
-                position: must_free.0,
-                arity: must_free.1,
-            }));
-        }
-    }
-
-    pub fn build_pattern_matching(
-        group: &tree::RuleGroup,
-        i: usize,
-        parameter: tree::Parameter,
-    ) -> Term {
-        let argument = Term::reference(&format!("arg_{i}"));
-
-        match parameter {
-            tree::Parameter::U60(value) => Term::logical_and(
-                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
-                Term::equal(Term::get_num(argument), Term::create_u60(value)),
-            ),
-            tree::Parameter::F60(value) => Term::logical_and(
-                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::F60)),
-                Term::equal(Term::get_num(argument), Term::create_f60(value)),
-            ),
-            tree::Parameter::Constructor(tree::Constructor { name, .. }) => Term::logical_and(
-                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
-                Term::equal(Term::get_num(argument), Term::ext(&name)),
-            ),
-            tree::Parameter::Atom(..) if group.strict_parameters[i] => {
-                // TODO: hoas for kind2
-
-                Term::logical_or(
-                    Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
-                    Term::logical_or(
-                        Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
-                        Term::equal(Term::get_tag(argument), Term::Tag(Tag::F60)),
-                    ),
-                )
-            }
-            _ => Term::True,
-        }
-    }
-}
 
 impl Term {
     pub fn is_true(&self) -> bool {
@@ -422,6 +233,30 @@ impl Term {
             Term::LogicalAnd(left, right) => left.is_true() && right.is_true(),
             Term::LogicalOr(left, right) => left.is_true() || right.is_true(),
             _ => false,
+        }
+    }
+
+    pub fn simplify(&self) -> &Self {
+        match self {
+            Term::LogicalAnd(left, right) => {
+                if left.is_true() {
+                    right.simplify()
+                } else if right.is_true() {
+                    left.simplify()
+                } else {
+                    self
+                }
+            }
+            Term::LogicalOr(left, right) => {
+                if left.is_true() {
+                    left.simplify()
+                } else if right.is_true() {
+                    right.simplify()
+                } else {
+                    self
+                }
+            }
+            otherwise => otherwise
         }
     }
 
@@ -596,9 +431,7 @@ impl Deref for Block {
     type Target = Vec<Instruction>;
 
     fn deref(&self) -> &Self::Target {
-        match self {
-            Block { instructions } => instructions,
-        }
+        &self.instructions
     }
 }
 
@@ -611,5 +444,9 @@ impl Block {
 
     pub fn new(instructions: Vec<Instruction>) -> Self {
         Self { instructions }
+    }
+
+    pub fn push(&mut self, instruction: Instruction) {
+        self.instructions.push(instruction);
     }
 }

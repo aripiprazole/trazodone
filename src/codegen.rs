@@ -6,7 +6,7 @@ use llvm_sys::core::*;
 use llvm_sys::error::LLVMDisposeErrorMessage;
 use llvm_sys::prelude as llvm;
 use crate::cstr::cstr;
-use crate::tree::Rule;
+use crate::syntax::Rule;
 
 pub struct Codegen {
     pub context: llvm::LLVMContextRef,

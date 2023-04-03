@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Result};
 use std::fmt::{Display, Formatter};
 
-pub use crate::spec::*;
+pub use crate::ir::*;
 
 pub struct Print<'a, P: Pretty + ?Sized>(usize, &'a P);
 
@@ -44,16 +44,12 @@ pub trait Pretty {
 
 impl Debug for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Block { instructions } => {
-                writeln!(f, "{{")?;
-                for instruction in instructions {
-                    instruction.pretty(2, f)?;
-                    writeln!(f)?;
-                }
-                write!(f, "}}")
-            }
+        writeln!(f, "{{")?;
+        for instruction in &self.instructions {
+            instruction.pretty(2, f)?;
+            writeln!(f)?;
         }
+        write!(f, "}}")
     }
 }
 
