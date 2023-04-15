@@ -15,7 +15,12 @@ fn main() {
     let file = hvm::language::syntax::read_file(&example).unwrap();
     let book = hvm::language::rulebook::gen_rulebook(&file);
 
+    // println!("{:#?}", book.rule_group);
+
     for group in book.transform().unwrap() {
+        println!("=>>>>>>>>");
+        println!("Building: {}", group.name);
         println!("{:#?}", group.transform().unwrap());
+        println!("<<<<<<<<=");
     }
 }

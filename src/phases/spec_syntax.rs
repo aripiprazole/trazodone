@@ -4,6 +4,23 @@ use crate::phases::{Result, Transform};
 use crate::syntax;
 use crate::syntax::*;
 
+pub struct Variable {
+    pub name: Option<String>,
+    pub index: u64,
+    pub field_index: Option<u64>,
+}
+
+pub struct Context {
+    pub index: u64,
+    pub variables: Vec<Variable>,
+}
+
+trait ContextTransform {
+    type Output;
+
+    fn transform(self, context: &mut Context) -> Result<Self::Output>;
+}
+
 impl Transform for hvm::syntax::Rule {
     type Output = Rule;
 
@@ -13,56 +30,89 @@ impl Transform for hvm::syntax::Rule {
         };
         let rhs = *self.rhs;
 
+        let mut context = Context {
+            index: 0,
+            variables: Vec::new(),
+        };
+
         Ok(Rule {
             name,
-            parameters: specialize_parameters(args)?,
-            value: rhs.transform()?,
+            parameters: specialize_parameters(args, &mut context)?,
+            value: rhs.transform(&mut context)?,
         })
     }
 }
 
-impl Transform for hvm::syntax::Term {
+impl ContextTransform for hvm::syntax::Term {
     type Output = Term;
 
-    fn transform(self) -> Result<Self::Output> {
+    fn transform(self, context: &mut Context) -> Result<Self::Output> {
         use hvm::syntax::Term::*;
 
         match self {
             U6O { numb } => Ok(Term::U60(numb)),
-            F6O { numb } => Ok(Term::F60(numb)),
-            Var { name } => Ok(Term::Atom(name)),
+            F6O { numb } => Ok(Term::F60(numb as f64)),
+            Var { name } => context
+                .variables
+                .iter()
+                .enumerate()
+                .find_map(|(index, variable)| {
+                    if variable.name == Some(name.clone()) {
+                        Some(Ok(Term::Atom(Atom {
+                            name: name.clone(),
+                            index: index as u64,
+                            field_index: variable.field_index,
+                        })))
+                    } else {
+                        None
+                    }
+                })
+                .unwrap(),
             Sup { box val0, box val1 } => Ok(Term::Super(Super {
-                first: val0.transform()?.into(),
-                second: val1.transform()?.into(),
+                first: val0.transform(context)?.into(),
+                second: val1.transform(context)?.into(),
             })),
             Lam { name, box body } => Ok(Term::Lam(syntax::Lam {
                 parameter: name,
-                value: body.transform()?.into(),
+                value: body.transform(context)?.into(),
             })),
             App { box func, box argm } => Ok(Term::App(syntax::App {
                 global_name: None,
-                callee: func.transform()?.into(),
-                arguments: vec![argm.transform()?],
+                callee: func.transform(context)?.into(),
+                arguments: vec![argm.transform(context)?],
             })),
             Ctr { name, args } => Ok(Term::App(syntax::App {
                 global_name: Some(name.clone()),
-                callee: Term::Atom(name).into(),
+                callee: Term::Atom(Atom {
+                    name,
+                    index: 0,
+                    field_index: None,
+                })
+                .into(),
                 arguments: args
                     .iter()
                     .map(Deref::deref)
                     .cloned()
-                    .map(|term| term.transform())
+                    .map(|term| term.transform(context))
                     .collect::<Result<_>>()?,
             })),
             Let {
                 name,
                 box expr,
                 box body,
-            } => Ok(Term::Let(syntax::Let {
-                name,
-                value: expr.transform()?.into(),
-                body: body.transform()?.into(),
-            })),
+            } => {
+                context.variables.push(Variable {
+                    name: Some(name.clone()),
+                    index: 0,
+                    field_index: None,
+                });
+
+                Ok(Term::Let(syntax::Let {
+                    name,
+                    value: expr.transform(context)?.into(),
+                    body: body.transform(context)?.into(),
+                }))
+            },
             Dup {
                 nam0,
                 nam1,
@@ -71,17 +121,17 @@ impl Transform for hvm::syntax::Term {
             } => Ok(Term::Duplicate(Duplicate {
                 from: nam0,
                 to: nam1,
-                value: expr.transform()?.into(),
-                body: body.transform()?.into(),
+                value: expr.transform(context)?.into(),
+                body: body.transform(context)?.into(),
             })),
             Op2 {
                 oper,
                 box val0,
                 box val1,
             } => Ok(Term::Binary(Binary {
-                lhs: val0.transform()?.into(),
+                lhs: val0.transform(context)?.into(),
                 op: oper,
-                rhs: val1.transform()?.into(),
+                rhs: val1.transform(context)?.into(),
             })),
         }
     }
@@ -127,20 +177,40 @@ impl RuleGroup {
 }
 
 #[allow(clippy::vec_box)]
-fn specialize_parameters(parameters: Vec<Box<hvm::syntax::Term>>) -> Result<Vec<Parameter>> {
+fn specialize_parameters(
+    parameters: Vec<Box<hvm::syntax::Term>>,
+    context: &mut Context,
+) -> Result<Vec<Parameter>> {
     use hvm::syntax::Term::*;
 
     parameters
         .iter()
         .map(Deref::deref)
         .cloned()
-        .map(|term| match term {
-            Var { name } if name == "*" => Ok(Parameter::Erased),
-            Var { name } => Ok(Parameter::Atom(name)),
+        .enumerate()
+        .map(|(index, term)| match term {
+            Var { name } if name == "*" => {
+                context.variables.push(Variable {
+                    name: None,
+                    index: context.index,
+                    field_index: None,
+                });
+
+                Ok(Parameter::Erased)
+            }
+            Var { name } => {
+                context.variables.push(Variable {
+                    name: Some(name.clone()),
+                    index: context.index,
+                    field_index: None,
+                });
+
+                Ok(Parameter::Atom(name))
+            }
             Ctr { name, args } => Ok(Parameter::Constructor(Constructor {
                 name,
                 arity: args.len() as u64,
-                flatten_patterns: specialize_flatten_patterns(args)?,
+                flatten_patterns: specialize_flatten_patterns(args, index as u64, context)?,
             })),
             U6O { numb } => Ok(Parameter::U60(numb)),
             _ => Err("Invalid pattern".into()),
@@ -151,15 +221,34 @@ fn specialize_parameters(parameters: Vec<Box<hvm::syntax::Term>>) -> Result<Vec<
 #[allow(clippy::vec_box)]
 fn specialize_flatten_patterns(
     flatten_patterns: Vec<Box<hvm::syntax::Term>>,
+    index: u64,
+    context: &mut Context,
 ) -> Result<Vec<Pattern>> {
     use hvm::syntax::Term::*;
 
     flatten_patterns
         .iter()
         .map(Deref::deref)
-        .map(|term| match term {
-            Var { name } if name == "*" => Ok(Pattern::Erased),
-            Var { name } => Ok(Pattern::Atom(name.clone())),
+        .enumerate()
+        .map(|(pattern_index, term)| match term {
+            Var { name } if name == "*" => {
+                context.variables.push(Variable {
+                    name: None,
+                    index,
+                    field_index: Some(pattern_index as u64),
+                });
+
+                Ok(Pattern::Erased)
+            }
+            Var { name } => {
+                context.variables.push(Variable {
+                    name: Some(name.clone()),
+                    index,
+                    field_index: Some(pattern_index as u64),
+                });
+
+                Ok(Pattern::Atom(name.clone()))
+            }
             _ => Err("Invalid flatten pattern".into()),
         })
         .collect()

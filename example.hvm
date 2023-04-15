@@ -1,13 +1,3 @@
-// Sort : List -> List
-(Sort Nil)         = Nil
-(Sort (Cons x xs)) = (Insert x (Sort xs))
-
-// Insert : U60 -> List -> List
-(Insert v Nil)         = (Cons v Nil)
-(Insert v (Cons x xs)) = (SwapGT (> v x) v x xs)
-
 // SwapGT : U60 -> U60 -> U60 -> List -> List
 (SwapGT 0 v x xs) = (Cons v (Cons x xs))
 (SwapGT 1 v x xs) = (Cons x (Insert v xs))
-
-(Main) = (Sort Nil)

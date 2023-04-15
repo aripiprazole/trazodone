@@ -89,6 +89,18 @@ impl Pretty for Binary {
     }
 }
 
+impl Debug for PositionBinary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            PositionBinary::Con(v) => write!(f, "{v}"),
+            PositionBinary::Sum(a, b) => write!(f, "(+ {a:?} {b:?})"),
+            PositionBinary::Sub(a, b) => write!(f, "(- {a:?} {b:?})"),
+            PositionBinary::Mul(a, b) => write!(f, "(* {a:?} {b:?})"),
+            PositionBinary::Div(a, b) => write!(f, "(/ {a:?} {b:?})"),
+        }
+    }
+}
+
 impl Pretty for Position {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
         match self {
@@ -96,7 +108,7 @@ impl Pretty for Position {
                 reference_name,
                 gate_index,
             } => {
-                write!(f, "[@{reference_name} {gate_index}]")
+                write!(f, "[@{reference_name} {gate_index:?}]")
             }
             Position::Host => write!(f, "[^host]"),
         }
@@ -120,7 +132,7 @@ impl Pretty for Term {
             Term::GetNumber(GetNumber { term }) => write!(f, "get-number {}", term.boxed()),
             Term::GetExt(GetExt { term }) => write!(f, "get-ext {}", term.boxed()),
             Term::GetTag(GetTag { term }) => write!(f, "get-tag {}", term.boxed()),
-            Term::Alloc(Alloc { size }) => write!(f, "alloc {size}"),
+            Term::Alloc(Alloc { size }) => write!(f, "alloc(arity: {size})"),
             Term::GetPosition(GetPosition { term, position }) => {
                 write!(f, "get-position {} {position}", term.boxed())
             }
@@ -136,6 +148,9 @@ impl Pretty for Term {
                 position.boxed(),
                 argument_index.boxed()
             ),
+            Term::NotFound(atom) => {
+                write!(f, "{{! not-found {atom:?} !}}")
+            }
         }
     }
 }
@@ -208,7 +223,7 @@ impl Pretty for Instruction {
             }
             Instruction::Link(Link { position, term }) => write!(
                 f,
-                "{:>indent$}link {} {};",
+                "{:>indent$}link {} ({});",
                 "",
                 position.boxed(),
                 term.boxed()
