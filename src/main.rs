@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use hvm::{default_precomp, PRECOMP};
 
 use crate::phases::spec_ir::{build_name, GlobalContext};
@@ -27,10 +28,10 @@ fn main() {
 
     // println!("{:#?}", book.rule_group);
 
-    let mut global = Box::new(GlobalContext::new());
+    let mut global: Box<GlobalContext> = Box::default();
 
     for (id, name) in itertools::sorted(book.id_to_name.iter()) {
-        global.constructors.insert(build_name(name), *id);
+        global.constructors.insert(build_name(name), (*id) + 1);
     }
 
     let groups = book
@@ -83,7 +84,8 @@ fn run_eval() {
         hvm::default_heap_size(),
         hvm::default_heap_tids(),
         false,
-    ).unwrap();
+    )
+    .unwrap();
     println!("{}", norm);
     eprintln!();
     eprintln!(

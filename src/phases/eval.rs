@@ -18,7 +18,7 @@ pub enum Object {
 
 #[derive(Debug, Clone)]
 pub struct Context {
-    pub reduce_context: crate::runtime::ReduceContext,
+    pub reduce: crate::runtime::ReduceContext,
     pub variables: HashMap<String, Object>,
 }
 
@@ -34,8 +34,12 @@ impl Eval for Position {
     fn eval(self, context: &mut Context) -> Self::Output {
         unsafe {
             match self {
-                Position::Named { gate_index, .. } => gate_index.eval(context),
-                Position::Host => *hvm__get_host(context.reduce_context),
+                Position::Named { gate_index, reference_name } => {
+                    let n = context.variables.get(&reference_name).unwrap().as_u64();
+
+                    n + gate_index.eval(context)
+                },
+                Position::Host => *hvm__get_host(context.reduce),
             }
         }
     }
@@ -76,12 +80,12 @@ impl Eval for Term {
                 Term::NotFound(atom) => {
                     panic!("Atom not found: ({:?})", atom)
                 }
-                Term::Current => Object::U64(hvm__get_term(context.reduce_context)),
+                Term::Current => Object::U64(hvm__get_term(context.reduce)),
                 Term::LoadArgument(LoadArgument { argument_index }) => {
-                    Object::U64(hvm__load_argument(context.reduce_context, argument_index))
+                    Object::U64(hvm__load_argument(context.reduce, argument_index))
                 }
                 Term::Alloc(Alloc { size }) => {
-                    Object::U64(hvm__alloc(context.reduce_context, size))
+                    Object::U64(hvm__alloc(context.reduce, size))
                 }
                 Term::GetNumber(GetNumber { box term }) => {
                     Object::U64(hvm__get_number(term.eval(context).as_u64()))
@@ -93,7 +97,7 @@ impl Eval for Term {
                     Object::U64(hvm__get_loc(term.eval(context).as_u64(), position))
                 }
                 Term::Create(Value::U60(U60(value))) => {
-                    Object::U64(hvm__alloc(context.reduce_context, value))
+                    Object::U64(hvm__alloc(context.reduce, value))
                 }
                 Term::Create(Value::Constructor(FunctionId(_name, id), position)) => {
                     Object::U64(hvm__create_constructor(id, position.eval(context)))
@@ -178,18 +182,18 @@ impl Eval for Instruction {
                     return Control::Break(value.eval(context));
                 }
                 Instruction::IncrementCost => {
-                    hvm__increment_cost(context.reduce_context);
+                    hvm__increment_cost(context.reduce);
                 }
                 Instruction::Link(Link { term, position }) => {
-                    let a = term.eval(context).as_u64();
-                    let b = position.eval(context);
+                    let term = term.eval(context).as_u64();
+                    let position = position.eval(context);
 
-                    hvm__link(context.reduce_context, a, b);
+                    hvm__link(context.reduce, position, term);
                 }
                 Instruction::Free(Free { position, arity }) => {
                     let position = position.eval(context).as_u64();
 
-                    hvm__free(context.reduce_context, position, arity)
+                    hvm__free(context.reduce, position, arity)
                 }
             }
         }

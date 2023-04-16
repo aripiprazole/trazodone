@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::ir::*;
-use crate::phases::Transform;
 use crate::syntax;
 use crate::syntax::Rule;
 
@@ -34,8 +33,8 @@ pub struct GlobalContext {
     pub constructors: HashMap<String, u64>,
 }
 
-impl GlobalContext {
-    pub fn new() -> Self {
+impl Default for GlobalContext {
+    fn default() -> Self {
         Self {
             name_index: 29, // precomp.rs
             constructors: HashMap::new(),
@@ -44,7 +43,7 @@ impl GlobalContext {
 }
 
 impl syntax::RuleGroup {
-    pub fn transform_with(self, mut context: Box<GlobalContext>) -> Result<RuleGroup> {
+    pub fn transform_with(self, context: Box<GlobalContext>) -> Result<RuleGroup> {
         Ok(RuleGroup {
             name: self.name.clone(),
             hvm_visit: Block::default(),

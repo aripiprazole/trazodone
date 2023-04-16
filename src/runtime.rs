@@ -1,4 +1,6 @@
-pub type ReduceContext = *mut libc::c_void;
+use hvm::ReduceCtx;
+
+pub type ReduceContext = *mut ReduceCtx<'static>;
 pub type Pointer = u64;
 pub type Tag = u64;
 pub type Position = u64;
@@ -90,10 +92,12 @@ pub unsafe extern "C" fn hvm__create_constructor(fun: u64, position: Position) -
     hvm::runtime::Ctr(fun, position)
 }
 
-fn get_context<'a>(ctx: ReduceContext) -> &'a mut hvm::runtime::ReduceCtx<'a> {
+fn get_context<'a>(ctx: ReduceContext) -> ReduceCtx<'a> {
     unsafe {
-        let ptr = std::mem::transmute::<_, *mut hvm::runtime::ReduceCtx<'a>>(ctx);
-
-        ptr.as_mut().unwrap()
+        if ctx.is_null() {
+            panic!("Reduce context is null");
+        } else {
+            ctx.read()
+        }
     }
 }
