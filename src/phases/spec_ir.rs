@@ -257,7 +257,6 @@ impl Codegen {
     }
 
     fn fresh_name(&mut self, name: &str) -> String {
-        println!("fresh_name({}) @{}", name, self.name_index);
         let name = format!("{name}_{}", self.name_index);
         self.name_index += 1;
         name
