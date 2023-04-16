@@ -67,7 +67,7 @@ impl Pretty for F60 {
 
 impl Pretty for FunctionId {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
-        write!(f, "#{}", self.0)
+        write!(f, "#{}@{}", self.0, self.1)
     }
 }
 
@@ -272,7 +272,7 @@ mod tests {
                     Instruction::binding(
                         "done",
                         Term::create_constructor(
-                            FunctionId::new("AGirl"),
+                            FunctionId::new("AGirl", 1),
                             Position::initial("ctr_0"),
                         ),
                     ),

@@ -2,6 +2,7 @@ pub type ReduceContext = *mut libc::c_void;
 pub type Pointer = u64;
 pub type Tag = u64;
 pub type Position = u64;
+pub type Host = *mut u64;
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
@@ -9,6 +10,22 @@ pub unsafe extern "C" fn hvm__increment_cost(ctx: ReduceContext) {
     let ctx = get_context(ctx);
 
     hvm::runtime::inc_cost(ctx.heap, ctx.tid)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__get_host(ctx: ReduceContext) -> Host {
+    let ctx = get_context(ctx);
+
+    ctx.host
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__get_term(ctx: ReduceContext) -> Pointer {
+    let ctx = get_context(ctx);
+
+    ctx.term
 }
 
 #[no_mangle]

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ir::*;
 use crate::phases::Transform;
 use crate::syntax;
@@ -8,21 +10,45 @@ pub type FreeIndex = u64;
 pub type FreeArity = u64;
 pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
 
-#[derive(Default)]
 pub struct Codegen {
     name_index: u64,
     variables: Vec<Term>,
     instructions: Block,
+    global: Box<GlobalContext>,
 }
 
-impl Transform for syntax::RuleGroup {
-    type Output = RuleGroup;
+impl Codegen {
+    pub fn new(global: Box<GlobalContext>) -> Self {
+        Self {
+            global,
+            name_index: 0,
+            variables: Vec::new(),
+            instructions: Block::default(),
+        }
+    }
+}
 
-    fn transform(self) -> Result<Self::Output> {
+#[derive(Debug, Clone)]
+pub struct GlobalContext {
+    pub name_index: u64,
+    pub constructors: HashMap<String, u64>,
+}
+
+impl GlobalContext {
+    pub fn new() -> Self {
+        Self {
+            name_index: 29, // precomp.rs
+            constructors: HashMap::new(),
+        }
+    }
+}
+
+impl syntax::RuleGroup {
+    pub fn transform_with(self, mut context: Box<GlobalContext>) -> Result<RuleGroup> {
         Ok(RuleGroup {
             name: self.name.clone(),
             hvm_visit: Block::default(),
-            hvm_apply: Codegen::default().build_apply(&self)?,
+            hvm_apply: Codegen::new(context).build_apply(&self)?,
         })
     }
 }
@@ -57,19 +83,24 @@ impl Codegen {
             }
 
             if match_rule.is_true() {
+                self.instructions.push(Instruction::IncrementCost);
                 let done = self.build_term(rule.value.clone());
                 self.build_link(done);
                 self.build_collect(collect);
                 self.build_free(&rule, group);
+                self.instructions.push(Instruction::Return(Term::True));
             } else {
                 let mut then: Codegen = self.new_block(Instruction::IncrementCost);
                 let done = then.build_term(rule.value.clone());
                 then.build_link(done);
                 then.build_collect(collect);
                 then.build_free(&rule, group);
+                then.instructions.push(Instruction::Return(Term::True));
 
                 self.instructions
-                    .push(Instruction::cond(match_rule, then.into(), None));
+                    .push(Instruction::cond(match_rule, then.instructions, None));
+
+                self.instructions.push(Instruction::Return(Term::True));
             }
         }
 
@@ -101,7 +132,7 @@ impl Codegen {
             }) => {
                 let name = self.fresh_name("constructor");
 
-                let global_name = build_name(&global_name);
+                let compiled_global_name = build_name(&global_name);
                 let arguments = arguments
                     .into_iter()
                     .map(|argument| self.build_term(argument))
@@ -118,7 +149,16 @@ impl Codegen {
                     ))
                 }
 
-                Term::create_constructor(FunctionId::new(&global_name), Position::initial(&name))
+                let index = self
+                    .global
+                    .constructors
+                    .get(&compiled_global_name)
+                    .unwrap_or_else(|| panic!("no constructor for {}", compiled_global_name));
+
+                Term::create_constructor(
+                    FunctionId::new(&compiled_global_name, *index),
+                    Position::initial(&name),
+                )
             }
             App(syntax::App {
                 box callee,
@@ -142,15 +182,13 @@ impl Codegen {
                 name,
                 index,
                 field_index,
-            }) => {
-                match self.variables.get(index as usize) {
-                    Some(value) => value.clone(),
-                    None => Term::NotFound(syntax::Atom {
-                        name,
-                        index,
-                        field_index,
-                    }),
-                }
+            }) => match self.variables.get(index as usize) {
+                Some(value) => value.clone(),
+                None => Term::NotFound(syntax::Atom {
+                    name,
+                    index,
+                    field_index,
+                }),
             },
             Duplicate(_) => todo!(),
             Lam(_) => todo!(),
@@ -264,25 +302,10 @@ impl Codegen {
 
     fn new_block(&self, instruction: Instruction) -> Self {
         Self {
+            global: self.global.clone(),
             name_index: self.name_index,
             variables: self.variables.clone(),
             instructions: Block::with(instruction),
-        }
-    }
-}
-
-impl From<Codegen> for Block {
-    fn from(codegen: Codegen) -> Self {
-        codegen.instructions
-    }
-}
-
-impl From<Block> for Codegen {
-    fn from(instructions: Block) -> Self {
-        Self {
-            name_index: 0,
-            variables: Default::default(),
-            instructions,
         }
     }
 }

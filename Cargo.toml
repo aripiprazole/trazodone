@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hvm = "1.0.6"
+hvm = { git = "https://github.com/aripiprazole/HVM.git" }
 libc = "0.2.139"
 llvm-sys = "150.0.5"
+itertools = "0.10"

@@ -26,7 +26,7 @@ pub struct U60(pub u64);
 pub struct F60(pub f64);
 
 #[derive(Debug, Clone)]
-pub struct FunctionId(pub String);
+pub struct FunctionId(pub String, pub u64);
 
 #[derive(Clone)]
 pub enum PositionBinary {
@@ -443,8 +443,8 @@ impl Position {
 }
 
 impl FunctionId {
-    pub fn new(name: &str) -> Self {
-        FunctionId(name.into())
+    pub fn new(name: &str, id: u64) -> Self {
+        FunctionId(name.into(), id)
     }
 }
 
