@@ -92,6 +92,12 @@ pub unsafe extern "C" fn hvm__create_constructor(fun: u64, position: Position) -
     hvm::runtime::Ctr(fun, position)
 }
 
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_function(fun: u64, position: Position) -> Pointer {
+    hvm::runtime::Fun(fun, position)
+}
+
 fn get_context<'a>(ctx: ReduceContext) -> ReduceCtx<'a> {
     unsafe {
         if ctx.is_null() {

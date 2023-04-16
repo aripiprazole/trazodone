@@ -12,6 +12,7 @@ pub fn compile_eval_precomp(
     smap: &'static [bool],
     group: RuleGroup,
 ) {
+    println!("{:?}", group.hvm_apply);
     let name = group.name.clone();
     precomp.insert(
         id as usize,

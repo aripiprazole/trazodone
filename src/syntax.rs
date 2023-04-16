@@ -47,6 +47,7 @@ pub struct Duplicate {
 
 #[derive(Debug, Clone)]
 pub struct App {
+    pub is_function: bool,
     pub global_name: Option<String>,
     pub callee: Box<Term>,
     pub arguments: Vec<Term>,

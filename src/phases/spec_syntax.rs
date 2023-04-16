@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use hvm::rulebook::RuleBook;
 
 use crate::phases::{Result, Transform};
 use crate::syntax;
@@ -13,6 +14,7 @@ pub struct Variable {
 pub struct Context {
     pub index: u64,
     pub variables: Vec<Variable>,
+    pub book: RuleBook,
 }
 
 trait ContextTransform {
@@ -21,16 +23,17 @@ trait ContextTransform {
     fn transform(self, context: &mut Context) -> Result<Self::Output>;
 }
 
-impl Transform for hvm::syntax::Rule {
+impl ContextTransform for hvm::syntax::Rule {
     type Output = Rule;
 
-    fn transform(self) -> Result<Self::Output> {
+    fn transform(self, context: &mut Context) -> Result<Self::Output> {
         let hvm::Term::Ctr { name, args } = *self.lhs else {
             return Err("rule is not a constructor".into());
         };
         let rhs = *self.rhs;
 
         let mut context = Context {
+            book: context.book.clone(),
             index: 0,
             variables: Vec::new(),
         };
@@ -77,11 +80,13 @@ impl ContextTransform for hvm::syntax::Term {
                 value: body.transform(context)?.into(),
             })),
             App { box func, box argm } => Ok(Term::App(syntax::App {
+                is_function: false,
                 global_name: None,
                 callee: func.transform(context)?.into(),
                 arguments: vec![argm.transform(context)?],
             })),
             Ctr { name, args } => Ok(Term::App(syntax::App {
+                is_function: context.book.ctr_is_fun.contains_key(&name),
                 global_name: Some(name.clone()),
                 callee: Term::Atom(Atom {
                     name,
@@ -137,7 +142,7 @@ impl ContextTransform for hvm::syntax::Term {
     }
 }
 
-impl Transform for hvm::rulebook::RuleBook {
+impl Transform for RuleBook {
     type Output = Vec<RuleGroup>;
 
     fn transform(self) -> Result<Self::Output> {
@@ -149,14 +154,18 @@ impl Transform for hvm::rulebook::RuleBook {
 }
 
 impl RuleGroup {
-    pub fn specialize(name: String, book: &hvm::rulebook::RuleBook) -> Result<Self> {
+    pub fn specialize(name: String, book: &RuleBook) -> Result<Self> {
         let (_id, group) = book
             .rule_group
             .get(&name)
             .ok_or(format!("No such group: {name}"))?;
         let rules = group
             .iter()
-            .map(|rule| rule.clone().transform())
+            .map(|rule| rule.clone().transform(&mut Context {
+                book: book.clone(),
+                index: 0,
+                variables: Vec::new(),
+            }))
             .collect::<Result<Vec<_>>>()?;
 
         let strict_parameters = book

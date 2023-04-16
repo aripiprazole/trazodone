@@ -4,10 +4,7 @@ use crate::ir::{
     Alloc, Block, Free, FunctionId, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link,
     LoadArgument, Position, PositionBinary, Term, Value, U60,
 };
-use crate::runtime::{
-    hvm__alloc, hvm__create_constructor, hvm__free, hvm__get_host, hvm__get_loc, hvm__get_number,
-    hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument,
-};
+use crate::runtime::{hvm__alloc, hvm__create_constructor, hvm__create_function, hvm__free, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
@@ -98,6 +95,9 @@ impl Eval for Term {
                 }
                 Term::Create(Value::U60(U60(value))) => {
                     Object::U64(hvm__alloc(context.reduce, value))
+                }
+                Term::Create(Value::Function(FunctionId(_name, id), position)) => {
+                    Object::U64(hvm__create_function(id, position.eval(context)))
                 }
                 Term::Create(Value::Constructor(FunctionId(_name, id), position)) => {
                     Object::U64(hvm__create_constructor(id, position.eval(context)))
@@ -215,22 +215,6 @@ impl Eval for Block {
         panic!("No return statement found")
     }
 }
-
-/**
-function apply(ctx) {
-  let arg0 = load_argument(ctx, 0);
-  let arg1 = load_argument(ctx, 1);
-  if (get_tag(arg0) == ...) {
-    return caralhao_pequeno();
-  }
-  if (get_tag(arg0) == ...) {
-    return caralhao_grande();
-  }
-  return heavy_computation();
-}
-
-apply(ctx);
-*/
 
 impl Object {
     pub fn as_u64(&self) -> u64 {
