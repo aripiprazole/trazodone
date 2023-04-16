@@ -14,6 +14,7 @@ pub fn compile_eval_precomp(
 ) {
     println!("{:?}", group.hvm_apply);
     let name = group.name.clone();
+    let xname = group.name.clone();
     precomp.insert(
         id as usize,
         Precomp {
@@ -34,8 +35,7 @@ pub fn compile_eval_precomp(
                     done.as_bool()
                 }),
                 visit: Arc::new(move |_| {
-                    println!("visit");
-                    // println!("visit: {}", name);
+                    println!("visit: {}", xname);
 
                     false
                 }),

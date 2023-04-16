@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{
-    Alloc, Block, Free, FunctionId, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link,
-    LoadArgument, Position, PositionBinary, Term, Value, U60,
-};
+use crate::ir::{Alloc, Block, Free, FunctionId, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link, LoadArgument, Position, PositionBinary, Term, Value, U60, Tag};
 use crate::runtime::{hvm__alloc, hvm__create_constructor, hvm__create_function, hvm__free, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,10 +59,16 @@ impl Eval for Term {
     fn eval(self, context: &mut Context) -> Self::Output {
         unsafe {
             match self {
-                Term::Tag(_) => todo!(),
+                Term::Tag(Tag::F60) => Object::U64(hvm::F60),
+                Term::Tag(Tag::U60) => Object::U64(hvm::U60),
+                Term::Tag(Tag::FUNCTION) => Object::U64(hvm::FUN),
+                Term::Tag(Tag::CONSTRUCTOR) => Object::U64(hvm::CTR),
+                Term::Tag(..) => todo!(),
                 Term::ArityOf(_) => todo!(),
                 Term::GetExt(_) => todo!(),
-                Term::Ext(_) => todo!(),
+                Term::Ext(id, ..) => {
+                    Object::U64(id)
+                },
                 Term::TakeArgument(_) => todo!(),
                 Term::True => Object::Bool(true),
                 Term::False => Object::Bool(false),
@@ -212,7 +215,7 @@ impl Eval for Block {
             }
         }
 
-        panic!("No return statement found")
+        Object::Bool(false)
     }
 }
 

@@ -77,7 +77,7 @@ impl Codegen {
 
             let mut match_rule = Term::True;
             for (i, parameter) in rule.parameters.iter().cloned().enumerate() {
-                match_rule = Term::logical_and(match_rule, build_match(group, i, parameter));
+                match_rule = Term::logical_and(match_rule, self.build_match(group, i, parameter));
                 match_rule = match_rule.simplify().clone();
             }
 
@@ -98,9 +98,16 @@ impl Codegen {
 
                 self.instructions
                     .push(Instruction::cond(match_rule, then.instructions, None));
-
-                self.instructions.push(Instruction::Return(Term::True));
             }
+        }
+
+        if self
+            .instructions
+            .last()
+            .filter(|inst| matches!(inst, Instruction::Return(_)))
+            .is_some()
+        {
+            self.instructions.push(Instruction::Return(Term::False));
         }
 
         Ok(self.instructions.clone())
@@ -342,6 +349,53 @@ impl Codegen {
             instructions: Block::with(instruction),
         }
     }
+
+    fn build_match(
+        &self,
+        group: &syntax::RuleGroup,
+        i: usize,
+        parameter: syntax::Parameter,
+    ) -> Term {
+        use syntax::Parameter::*;
+
+        let argument = Term::reference(&format!("arg{i}"));
+
+        match parameter {
+            U60(value) => Term::logical_and(
+                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
+                Term::equal(Term::get_num(argument), Term::create_u60(value)),
+            ),
+            F60(value) => Term::logical_and(
+                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::F60)),
+                Term::equal(Term::get_num(argument), Term::create_f60(value)),
+            ),
+            Constructor(syntax::Constructor { name, .. }) => {
+                let compiled_global_name = build_name(&name);
+                let id = self
+                    .global
+                    .constructors
+                    .get(&compiled_global_name)
+                    .unwrap_or_else(|| panic!("no constructor for {}", compiled_global_name));
+
+                Term::logical_and(
+                    Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
+                    Term::equal(Term::get_num(argument), Term::ext(*id, &name)),
+                )
+            }
+            Atom(..) if group.strict_parameters[i] => {
+                // TODO: hoas for kind2
+
+                Term::logical_or(
+                    Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
+                    Term::logical_or(
+                        Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
+                        Term::equal(Term::get_tag(argument), Term::Tag(Tag::F60)),
+                    ),
+                )
+            }
+            _ => Term::True,
+        }
+    }
 }
 
 impl Variable {
@@ -361,39 +415,6 @@ impl Variable {
 
     pub fn as_term(&self) -> Term {
         Term::reference(&self.as_name())
-    }
-}
-
-fn build_match(group: &syntax::RuleGroup, i: usize, parameter: syntax::Parameter) -> Term {
-    use syntax::Parameter::*;
-
-    let argument = Term::reference(&format!("arg_{i}"));
-
-    match parameter {
-        U60(value) => Term::logical_and(
-            Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
-            Term::equal(Term::get_num(argument), Term::create_u60(value)),
-        ),
-        F60(value) => Term::logical_and(
-            Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::F60)),
-            Term::equal(Term::get_num(argument), Term::create_f60(value)),
-        ),
-        Constructor(syntax::Constructor { name, .. }) => Term::logical_and(
-            Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
-            Term::equal(Term::get_num(argument), Term::ext(&name)),
-        ),
-        Atom(..) if group.strict_parameters[i] => {
-            // TODO: hoas for kind2
-
-            Term::logical_or(
-                Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
-                Term::logical_or(
-                    Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::U60)),
-                    Term::equal(Term::get_tag(argument), Term::Tag(Tag::F60)),
-                ),
-            )
-        }
-        _ => Term::True,
     }
 }
 

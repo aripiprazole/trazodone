@@ -179,7 +179,7 @@ pub enum Term {
     Alloc(Alloc),
 
     // * Internal
-    Ext(String),
+    Ext(u64, String),
     Equal(Box<Term>, Box<Term>),
     LogicalOr(Box<Term>, Box<Term>),
     LogicalAnd(Box<Term>, Box<Term>),
@@ -314,8 +314,8 @@ impl Term {
         Term::LogicalAnd(lhs.into(), rhs.into())
     }
 
-    pub fn ext(ext: &str) -> Self {
-        Term::Ext(ext.into())
+    pub fn ext(id: u64, ext: &str) -> Self {
+        Term::Ext(id, ext.into())
     }
 
     pub fn alloc(size: u64) -> Self {

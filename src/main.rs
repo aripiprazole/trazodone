@@ -31,7 +31,7 @@ fn main() {
     let mut global: Box<GlobalContext> = Box::default();
 
     for (id, name) in itertools::sorted(book.id_to_name.iter()) {
-        global.constructors.insert(build_name(name), (*id) + 1);
+        global.constructors.insert(build_name(name), *id);
     }
 
     let groups = book
