@@ -229,6 +229,7 @@ pub enum Operation {
 
 #[derive(Debug)]
 pub struct Variable {
+    pub erased: bool,
     pub index: u64,
     pub field_index: Option<u64>,
 }

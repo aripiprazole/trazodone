@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::ir::*;
 use crate::phases::Transform;
 use crate::syntax;
@@ -176,10 +174,12 @@ impl Codegen {
             .enumerate()
             .flat_map(|(index, parameter)| match parameter {
                 Erased => vec![Variable {
+                    erased: true,
                     index: index as u64,
                     field_index: None,
                 }],
                 Atom(..) => vec![Variable {
+                    erased: false,
                     index: index as u64,
                     field_index: None,
                 }],
@@ -187,7 +187,8 @@ impl Codegen {
                     .flatten_patterns
                     .iter()
                     .enumerate()
-                    .map(|(field_index, _)| Variable {
+                    .map(|(field_index, pattern)| Variable {
+                        erased: matches!(pattern, Pattern::Erased),
                         index: index as u64,
                         field_index: Some(field_index as u64),
                     })
@@ -199,9 +200,11 @@ impl Codegen {
 
     pub fn build_collect(&mut self, collect: Vec<Variable>) {
         for term in collect {
-            let argument = term.as_term();
+            if term.erased {
+                let argument = term.as_term();
 
-            self.instructions.push(Instruction::collect(argument));
+                self.instructions.push(Instruction::collect(argument));
+            }
         }
     }
 
