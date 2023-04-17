@@ -1,5 +1,5 @@
-use std::ops::Deref;
 use hvm::rulebook::RuleBook;
+use std::ops::Deref;
 
 use crate::phases::{Result, Transform};
 use crate::syntax;
@@ -117,7 +117,7 @@ impl ContextTransform for hvm::syntax::Term {
                     value: expr.transform(context)?.into(),
                     body: body.transform(context)?.into(),
                 }))
-            },
+            }
             Dup {
                 nam0,
                 nam1,
@@ -161,11 +161,13 @@ impl RuleGroup {
             .ok_or(format!("No such group: {name}"))?;
         let rules = group
             .iter()
-            .map(|rule| rule.clone().transform(&mut Context {
-                book: book.clone(),
-                index: 0,
-                variables: Vec::new(),
-            }))
+            .map(|rule| {
+                rule.clone().transform(&mut Context {
+                    book: book.clone(),
+                    index: 0,
+                    variables: Vec::new(),
+                })
+            })
             .collect::<Result<Vec<_>>>()?;
 
         let strict_parameters = book

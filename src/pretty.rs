@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Result};
 use std::fmt::{Display, Formatter};
 
-pub use crate::ir::*;
+use crate::ir::apply::*;
 
 pub struct Print<'a, P: Pretty + ?Sized>(usize, &'a P);
 
@@ -136,7 +136,10 @@ impl Pretty for Term {
             Term::GetPosition(GetPosition { term, position }) => {
                 write!(f, "get-position {} {position}", term.boxed())
             }
-            Term::LoadArgument(LoadArgument { term, argument_index }) => {
+            Term::LoadArgument(LoadArgument {
+                term,
+                argument_index,
+            }) => {
                 write!(f, "load-argument ({}) {argument_index}", term.boxed())
             }
             Term::TakeArgument(TakeArgument {

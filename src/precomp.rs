@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use hvm::{Precomp, PrecompFuns, ReduceCtx};
 
-use crate::ir::RuleGroup;
+use crate::ir::apply::RuleGroup;
 use crate::phases::eval::{Context, Eval};
 
 pub fn compile_eval_precomp(
@@ -22,7 +22,7 @@ pub fn compile_eval_precomp(
             name: name.clone().leak(),
             funs: Some(PrecompFuns {
                 apply: Arc::new(move |mut ctx| {
-                    println!("apply: {}", name.clone());
+                    println!("ir: {}", name.clone());
                     let ctx = &mut ctx;
                     let ctx = ctx as *const _ as *mut ReduceCtx;
                     let mut context = Context {

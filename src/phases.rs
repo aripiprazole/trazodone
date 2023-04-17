@@ -1,7 +1,5 @@
-pub mod spec_ir;
-pub mod spec_syntax;
-pub mod spec_imp;
 pub mod eval;
+pub mod spec;
 
 pub type Result<T> = std::result::Result<T, String>;
 

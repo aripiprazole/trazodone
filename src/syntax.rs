@@ -109,4 +109,3 @@ pub enum Term {
     // * Internals
     Ref(Ref),
 }
-

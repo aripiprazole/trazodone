@@ -6,16 +6,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use hvm::rulebook::RuleBook;
-use hvm::{default_precomp, PRECOMP};
+use hvm::PRECOMP;
 use itertools::Itertools;
 
-use crate::ir::RuleGroup;
-use crate::phases::spec_ir::{build_name, GlobalContext};
+use crate::codegen::{build_name, GlobalContext};
+use crate::ir::apply::RuleGroup;
 use crate::phases::Transform;
 use crate::precomp::{compile_eval_precomp, compile_precomp};
 
 pub mod codegen;
-pub mod compile;
 pub mod cstr;
 pub mod ir;
 pub mod phases;
@@ -47,16 +46,11 @@ fn main() {
         })
         .collect::<HashMap<_, _>>();
 
-    // global.constructors.insert("_Main_".to_string(), 30);
-    // global.constructors.insert("_Add_".to_string(), 31);
-    // global.constructors.insert("_Succ_".to_string(), 32);
-    // global.constructors.insert("_Zero_".to_string(), 32);
-
-    setup_precomp(book, *global, groups);
+    setup_precomp(book, groups);
     run_eval(code)
 }
 
-fn setup_precomp(book: RuleBook, global: GlobalContext, groups: HashMap<String, RuleGroup>) {
+fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
     let mut precomp = PRECOMP
         .clone()
         .iter()
@@ -65,7 +59,6 @@ fn setup_precomp(book: RuleBook, global: GlobalContext, groups: HashMap<String, 
 
     for (id, name) in itertools::sorted(book.id_to_name.iter()) {
         let smap = book.id_to_smap.get(id).unwrap().clone().leak();
-        // let id = global.constructors.get(&build_name(name)).unwrap();
         if *id <= 29 {
             // skip built-in constructors
             continue;
