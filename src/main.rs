@@ -10,7 +10,7 @@ use hvm::PRECOMP;
 use itertools::Itertools;
 
 use crate::codegen::{build_name, GlobalContext};
-use crate::ir::apply::RuleGroup;
+use crate::ir::rule::RuleGroup;
 use crate::phases::Transform;
 use crate::precomp::{compile_eval_precomp, compile_precomp};
 
@@ -42,7 +42,7 @@ fn main() {
         .iter()
         .map(|group| {
             let name = group.name.clone();
-            (name, group.clone().transform_with(global.clone()).unwrap())
+            (name, group.clone().ir_codegen(global.clone()).unwrap())
         })
         .collect::<HashMap<_, _>>();
 

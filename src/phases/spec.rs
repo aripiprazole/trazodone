@@ -176,7 +176,7 @@ impl RuleGroup {
             .map(|id| book.id_to_smap.get(id).cloned().unwrap_or(vec![]))
             .unwrap_or(vec![]);
 
-        let strict_index = strict_parameters.iter().filter(|x| **x).count() as u64;
+        let strict_index = strict_parameters.iter().enumerate().filter(|x| *x.1).count() as u64;
 
         Ok(Self {
             name,

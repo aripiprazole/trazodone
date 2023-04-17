@@ -14,6 +14,8 @@ pub mod free;
 pub mod term;
 pub mod variable;
 
+pub type Result<T> = std::result::Result<T, String>;
+
 pub struct Codegen {
     name_index: u64,
     variables: Vec<Term>,
@@ -30,19 +32,7 @@ impl Codegen {
             instructions: Block::default(),
         }
     }
-}
 
-impl syntax::RuleGroup {
-    pub fn transform_with(self, context: Box<GlobalContext>) -> Result<RuleGroup> {
-        Ok(RuleGroup {
-            name: self.name.clone(),
-            hvm_visit: Block::default(),
-            hvm_apply: Codegen::new(context).build_apply(&self)?,
-        })
-    }
-}
-
-impl Codegen {
     pub fn build_apply(&mut self, group: &syntax::RuleGroup) -> Result<Block> {
         let rules = group.rules.clone();
         let strict_parameters = group.strict_parameters.clone();

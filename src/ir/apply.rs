@@ -10,13 +10,6 @@ pub struct Block {
 }
 
 #[derive(Debug, Clone)]
-pub struct RuleGroup {
-    pub name: String,
-    pub hvm_visit: Block,
-    pub hvm_apply: Block,
-}
-
-#[derive(Debug, Clone)]
 pub struct Color(pub u64);
 
 #[derive(Debug, Clone)]
@@ -237,7 +230,6 @@ pub struct Variable {
     pub field_index: Option<u64>,
 }
 
-pub type Result<T> = std::result::Result<T, String>;
 
 impl Term {
     pub fn is_true(&self) -> bool {
