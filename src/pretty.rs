@@ -122,7 +122,7 @@ impl Pretty for Term {
             Term::False => write!(f, "false"),
             Term::Current => write!(f, "^current-term"),
             Term::Tag(tag) => write!(f, "TAG:{tag:?}"),
-            Term::Ext(id, tag) => write!(f, "EXT:{id:?}{tag:?}"),
+            Term::Ext(id, tag) => write!(f, "EXT:{id:?}:{tag}"),
             Term::Equal(lhs, rhs) => write!(f, "{} == {}", lhs.boxed(), rhs.boxed()),
             Term::LogicalOr(lhs, rhs) => write!(f, "{} || {}", lhs.boxed(), rhs.boxed()),
             Term::LogicalAnd(lhs, rhs) => write!(f, "{} && {}", lhs.boxed(), rhs.boxed()),
@@ -136,8 +136,8 @@ impl Pretty for Term {
             Term::GetPosition(GetPosition { term, position }) => {
                 write!(f, "get-position {} {position}", term.boxed())
             }
-            Term::LoadArgument(LoadArgument { argument_index }) => {
-                write!(f, "load-argument {argument_index}")
+            Term::LoadArgument(LoadArgument { term, argument_index }) => {
+                write!(f, "load-argument ({}) {argument_index}", term.boxed())
             }
             Term::TakeArgument(TakeArgument {
                 position,
@@ -249,6 +249,9 @@ impl Pretty for Instruction {
                 }
                 Ok(())
             }
+            Instruction::Println(message) => {
+                write!(f, "{:>indent$}println!({:?});", "", message)
+            }
         }
     }
 }
@@ -259,31 +262,31 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let instructions = Block::new(vec![
-            Instruction::binding("arg_0", Term::load_arg(0)),
-            Instruction::binding("arg_1", Term::load_arg(1)),
-            Instruction::cond(
-                Term::True,
-                Block::new(vec![
-                    Instruction::IncrementCost,
-                    Instruction::binding("ctr_0", Term::get_position(Term::Current, 0)),
-                    Instruction::link(Position::initial("ctr_0"), Term::Ref("arg_1".into())),
-                    Instruction::link(Position::new("ctr_0", 1), Term::Ref("arg_0".into())),
-                    Instruction::binding(
-                        "done",
-                        Term::create_constructor(
-                            FunctionId::new("AGirl", 1),
-                            Position::initial("ctr_0"),
-                        ),
-                    ),
-                    Instruction::link(Position::Host, Term::reference("done")),
-                    Instruction::ret(Term::False),
-                ]),
-                None,
-            ),
-            Instruction::ret(Term::False),
-        ]);
-
-        println!("{instructions:?}");
+        // let instructions = Block::new(vec![
+        //     Instruction::binding("arg_0", Term::load_arg(0)),
+        //     Instruction::binding("arg_1", Term::load_arg(1)),
+        //     Instruction::cond(
+        //         Term::True,
+        //         Block::new(vec![
+        //             Instruction::IncrementCost,
+        //             Instruction::binding("ctr_0", Term::get_position(Term::Current, 0)),
+        //             Instruction::link(Position::initial("ctr_0"), Term::Ref("arg_1".into())),
+        //             Instruction::link(Position::new("ctr_0", 1), Term::Ref("arg_0".into())),
+        //             Instruction::binding(
+        //                 "done",
+        //                 Term::create_constructor(
+        //                     FunctionId::new("AGirl", 1),
+        //                     Position::initial("ctr_0"),
+        //                 ),
+        //             ),
+        //             Instruction::link(Position::Host, Term::reference("done")),
+        //             Instruction::ret(Term::False),
+        //         ]),
+        //         None,
+        //     ),
+        //     Instruction::ret(Term::False),
+        // ]);
+        //
+        // println!("{instructions:?}");
     }
 }

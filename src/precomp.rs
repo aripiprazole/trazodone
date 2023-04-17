@@ -7,7 +7,7 @@ use crate::ir::RuleGroup;
 use crate::phases::eval::{Context, Eval};
 
 pub fn compile_eval_precomp(
-    precomp: &mut Vec<Precomp>,
+    precomp: &mut HashMap<u64, Precomp>,
     id: u64,
     smap: &'static [bool],
     group: RuleGroup,
@@ -16,7 +16,7 @@ pub fn compile_eval_precomp(
     let name = group.name.clone();
     let xname = group.name.clone();
     precomp.insert(
-        id as usize,
+        id,
         Precomp {
             id,
             name: name.clone().leak(),
@@ -46,13 +46,13 @@ pub fn compile_eval_precomp(
 }
 
 pub fn compile_precomp(
-    precomp: &mut Vec<Precomp>,
+    precomp: &mut HashMap<u64, Precomp>,
     id: u64,
     name: &'static str,
     smap: &'static [bool],
 ) {
     precomp.insert(
-        id as usize,
+        id,
         Precomp {
             id,
             name,

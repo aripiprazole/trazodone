@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ir::*;
 use crate::syntax;
-use crate::syntax::Rule;
+use crate::syntax::{Constructor, Parameter, Pattern, Rule};
 
 pub type Insertion = Block;
 pub type FreeIndex = u64;
@@ -30,6 +30,7 @@ impl Codegen {
 #[derive(Debug, Clone)]
 pub struct GlobalContext {
     pub name_index: u64,
+    pub constructors_list: Vec<(String, u64)>,
     pub constructors: HashMap<String, u64>,
 }
 
@@ -37,6 +38,7 @@ impl Default for GlobalContext {
     fn default() -> Self {
         Self {
             name_index: 29, // precomp.rs
+            constructors_list: Vec::new(),
             constructors: HashMap::new(),
         }
     }
@@ -64,7 +66,7 @@ impl Codegen {
         for i in 0..strict_parameters.len() {
             self.instructions.push(Instruction::binding(
                 &format!("arg{i}"),
-                Term::load_arg(i as u64),
+                Term::load_arg(Term::Current, i as u64),
             ));
         }
 
@@ -90,6 +92,24 @@ impl Codegen {
                 self.instructions.push(Instruction::Return(Term::True));
             } else {
                 let mut then: Codegen = self.new_block(Instruction::IncrementCost);
+                let constructor_parameters = rule
+                    .parameters
+                    .iter()
+                    .enumerate()
+                    .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
+                for (index, parameter) in constructor_parameters {
+                    let Parameter::Constructor(constructor) = parameter else {
+                        continue;
+                    };
+
+                    let argument = Term::reference(&format!("arg{}", index));
+
+                    for (sub, _) in constructor.flatten_patterns.iter().enumerate() {
+                        let term = Term::load_arg(argument.clone(), sub as u64);
+                        let inst = Instruction::binding(&format!("arg{}_{}", index, sub), term);
+                        then.instructions.push(inst);
+                    }
+                }
                 let done = then.build_term(rule.value.clone());
                 then.build_link(done);
                 then.build_collect(collect);
@@ -101,14 +121,7 @@ impl Codegen {
             }
         }
 
-        if self
-            .instructions
-            .last()
-            .filter(|inst| matches!(inst, Instruction::Return(_)))
-            .is_some()
-        {
-            self.instructions.push(Instruction::Return(Term::False));
-        }
+        self.instructions.push(Instruction::Return(Term::False));
 
         Ok(self.instructions.clone())
     }
@@ -304,7 +317,7 @@ impl Codegen {
 
     pub fn build_free(&mut self, rule: &Rule, group: &syntax::RuleGroup) {
         let mut free = self
-            .create_free(&rule)
+            .create_free(rule)
             .iter()
             .map(|(index, arity)| {
                 let argument = Term::reference(&format!("arg{index}"));
@@ -379,7 +392,7 @@ impl Codegen {
 
                 Term::logical_and(
                     Term::equal(Term::get_tag(argument.clone()), Term::Tag(Tag::CONSTRUCTOR)),
-                    Term::equal(Term::get_num(argument), Term::ext(*id, &name)),
+                    Term::equal(Term::get_ext(argument), Term::ext(*id, &name)),
                 )
             }
             Atom(..) if group.strict_parameters[i] => {

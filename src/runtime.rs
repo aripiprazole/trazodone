@@ -32,7 +32,11 @@ pub unsafe extern "C" fn hvm__get_term(ctx: ReduceContext) -> Pointer {
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__link(ctx: ReduceContext, position: Position, pointer: Pointer) -> Pointer {
+pub unsafe extern "C" fn hvm__link(
+    ctx: ReduceContext,
+    position: Position,
+    pointer: Pointer,
+) -> Pointer {
     let ctx = get_context(ctx);
 
     hvm::runtime::link(ctx.heap, position, pointer)
@@ -56,16 +60,26 @@ pub unsafe extern "C" fn hvm__alloc(ctx: ReduceContext, arity: u64) -> u64 {
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__load_argument(ctx: ReduceContext, index: u64) -> Pointer {
+pub unsafe extern "C" fn hvm__load_argument(
+    ctx: ReduceContext,
+    term: Pointer,
+    index: u64,
+) -> Pointer {
     let ctx = get_context(ctx);
 
-    hvm::runtime::load_arg(ctx.heap, ctx.term, index)
+    hvm::runtime::load_arg(ctx.heap, term, index)
 }
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__get_loc(pointer: Pointer, argument: Position) -> Pointer {
     hvm::runtime::get_loc(pointer, argument)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__get_ext(pointer: Pointer) -> Tag {
+    hvm::runtime::get_ext(pointer)
 }
 
 #[no_mangle]

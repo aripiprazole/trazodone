@@ -5,8 +5,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use hvm::rulebook::RuleBook;
 use hvm::{default_precomp, PRECOMP};
+use itertools::Itertools;
 
+use crate::ir::RuleGroup;
 use crate::phases::spec_ir::{build_name, GlobalContext};
 use crate::phases::Transform;
 use crate::precomp::{compile_eval_precomp, compile_precomp};
@@ -22,15 +25,14 @@ pub mod runtime;
 pub mod syntax;
 
 fn main() {
-    let example = std::fs::read_to_string("example.hvm").unwrap();
-    let file = hvm::language::syntax::read_file(&example).unwrap();
+    let code = std::fs::read_to_string("example.hvm").unwrap();
+    let file = hvm::language::syntax::read_file(&code).unwrap();
     let book = hvm::language::rulebook::gen_rulebook(&file);
-
-    // println!("{:#?}", book.rule_group);
+    let mut id_to_name = book.id_to_name.clone();
+    id_to_name.remove(book.name_to_id.get("Main").unwrap());
 
     let mut global: Box<GlobalContext> = Box::default();
-
-    for (id, name) in itertools::sorted(book.id_to_name.iter()) {
+    for (id, name) in itertools::sorted(id_to_name.iter()) {
         global.constructors.insert(build_name(name), *id);
     }
 
@@ -45,20 +47,31 @@ fn main() {
         })
         .collect::<HashMap<_, _>>();
 
-    let id_to_smap = book.id_to_smap;
-    let id_to_name = book.id_to_name;
+    global.constructors.insert("_Main_".to_string(), 30);
+    global.constructors.insert("_Add_".to_string(), 31);
+    global.constructors.insert("_Succ_".to_string(), 32);
+    global.constructors.insert("_Zero_".to_string(), 32);
 
-    let mut precomp = default_precomp();
+    setup_precomp(book, *global, groups);
+    run_eval(code)
+}
 
-    for id in itertools::sorted(id_to_name.keys()) {
-        if *id < 30 {
+fn setup_precomp(book: RuleBook, global: GlobalContext, groups: HashMap<String, RuleGroup>) {
+    let mut precomp = PRECOMP
+        .clone()
+        .iter()
+        .map(|precomp| (precomp.id, precomp.clone()))
+        .collect::<HashMap<_, _>>();
+
+    for (id, name) in itertools::sorted(book.id_to_name.iter()) {
+        let smap = book.id_to_smap.get(id).unwrap().clone().leak();
+        // let id = global.constructors.get(&build_name(name)).unwrap();
+        if *id <= 29 {
             // skip built-in constructors
             continue;
         }
-        let name = id_to_name.get(id).unwrap().clone();
-        let smap = id_to_smap.get(id).unwrap().clone();
-        let smap = smap.leak();
-        match groups.get(&name) {
+
+        match groups.get(name) {
             Some(group) => {
                 compile_eval_precomp(&mut precomp, *id, smap, group.clone());
             }
@@ -69,14 +82,17 @@ fn main() {
     }
 
     unsafe {
-        *Arc::get_mut_unchecked(&mut PRECOMP.clone()) = Box::new(precomp);
-    }
+        let reordered = precomp
+            .iter()
+            .sorted_by_key(|(id, _)| *id)
+            .map(|(_, precomp)| precomp.clone())
+            .collect::<Vec<_>>();
 
-    run_eval()
+        *Arc::get_mut_unchecked(&mut PRECOMP.clone()) = Box::new(reordered);
+    }
 }
 
-fn run_eval() {
-    let code = std::fs::read_to_string("example.hvm").unwrap();
+fn run_eval(code: String) {
     let (norm, cost, time) = hvm::api::eval(
         &code,
         "Main",

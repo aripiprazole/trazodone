@@ -51,6 +51,7 @@ pub struct IntValue(pub Value);
 
 #[derive(Debug, Clone)]
 pub struct LoadArgument {
+    pub term: Box<Term>,
     pub argument_index: u64,
 }
 
@@ -100,6 +101,8 @@ pub enum Instruction {
     Term(Term),
     Return(Term),
     IncrementCost,
+    //
+    Println(String),
 }
 
 #[derive(Debug, Clone)]
@@ -277,8 +280,8 @@ impl Term {
         })
     }
 
-    pub fn load_arg(argument_index: u64) -> Self {
-        Term::LoadArgument(LoadArgument { argument_index })
+    pub fn load_arg(term: Term, argument_index: u64) -> Self {
+        Term::LoadArgument(LoadArgument { term: Box::new(term), argument_index })
     }
 
     pub fn get_tag(term: Term) -> Self {
@@ -384,6 +387,10 @@ impl Term {
 }
 
 impl Instruction {
+    pub fn println(name: &str) -> Self {
+        Instruction::Println(name.into())
+    }
+
     pub fn binding(name: &str, value: Term) -> Self {
         Instruction::Let(Let {
             name: name.into(),

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::ir::{Alloc, Block, Free, FunctionId, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link, LoadArgument, Position, PositionBinary, Term, Value, U60, Tag};
-use crate::runtime::{hvm__alloc, hvm__create_constructor, hvm__create_function, hvm__free, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
+use crate::ir::{Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link, LoadArgument, Position, PositionBinary, Term, Value, U60, Tag};
+use crate::runtime::{hvm__alloc, hvm__create_constructor, hvm__create_function, hvm__free, hvm__get_ext, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
@@ -65,11 +65,14 @@ impl Eval for Term {
                 Term::Tag(Tag::CONSTRUCTOR) => Object::U64(hvm::CTR),
                 Term::Tag(..) => todo!(),
                 Term::ArityOf(_) => todo!(),
-                Term::GetExt(_) => todo!(),
                 Term::Ext(id, ..) => {
                     Object::U64(id)
                 },
                 Term::TakeArgument(_) => todo!(),
+                Term::NotFound(atom) => {
+                    panic!("Atom not found: ({:?})", atom)
+                }
+                Term::Current => Object::U64(hvm__get_term(context.reduce)),
                 Term::True => Object::Bool(true),
                 Term::False => Object::Bool(false),
                 Term::Equal(box lhs, box rhs) => {
@@ -77,12 +80,13 @@ impl Eval for Term {
                     let rhs = rhs.eval(context);
                     Object::Bool(lhs == rhs)
                 }
-                Term::NotFound(atom) => {
-                    panic!("Atom not found: ({:?})", atom)
-                }
-                Term::Current => Object::U64(hvm__get_term(context.reduce)),
-                Term::LoadArgument(LoadArgument { argument_index }) => {
-                    Object::U64(hvm__load_argument(context.reduce, argument_index))
+                Term::GetExt(GetExt { term }) => {
+                    Object::U64(hvm__get_ext(term.eval(context).as_u64()))
+                },
+                Term::LoadArgument(LoadArgument { box term, argument_index }) => {
+                    let term = term.eval(context).as_u64();
+
+                    Object::U64(hvm__load_argument(context.reduce, term, argument_index))
                 }
                 Term::Alloc(Alloc { size }) => {
                     Object::U64(hvm__alloc(context.reduce, size))
@@ -197,6 +201,9 @@ impl Eval for Instruction {
                     let position = position.eval(context).as_u64();
 
                     hvm__free(context.reduce, position, arity)
+                }
+                Instruction::Println(message) => {
+                    println!("{}", message);
                 }
             }
         }
