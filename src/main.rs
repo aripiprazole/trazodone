@@ -47,10 +47,10 @@ fn main() {
         })
         .collect::<HashMap<_, _>>();
 
-    global.constructors.insert("_Main_".to_string(), 30);
-    global.constructors.insert("_Add_".to_string(), 31);
-    global.constructors.insert("_Succ_".to_string(), 32);
-    global.constructors.insert("_Zero_".to_string(), 32);
+    // global.constructors.insert("_Main_".to_string(), 30);
+    // global.constructors.insert("_Add_".to_string(), 31);
+    // global.constructors.insert("_Succ_".to_string(), 32);
+    // global.constructors.insert("_Zero_".to_string(), 32);
 
     setup_precomp(book, *global, groups);
     run_eval(code)
