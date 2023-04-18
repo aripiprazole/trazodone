@@ -1,9 +1,16 @@
+pub type Result<T> = std::result::Result<T, String>;
+
 use hvm::rulebook::RuleBook;
 use std::ops::Deref;
 
-use crate::phases::{Result, Transform};
 use crate::syntax;
 use crate::syntax::*;
+
+pub trait Transform {
+    type Output;
+
+    fn transform(self) -> Result<Self::Output>;
+}
 
 pub struct Variable {
     pub name: Option<String>,
@@ -93,7 +100,7 @@ impl ContextTransform for hvm::syntax::Term {
                     index: 0,
                     field_index: None,
                 })
-                .into(),
+                    .into(),
                 arguments: args
                     .iter()
                     .map(Deref::deref)

@@ -11,17 +11,18 @@ use itertools::Itertools;
 
 use crate::codegen::{build_name, GlobalContext};
 use crate::ir::rule::RuleGroup;
-use crate::phases::Transform;
+use crate::spec::Transform;
 use crate::precomp::{compile_eval_precomp, compile_precomp};
 
 pub mod codegen;
 pub mod cstr;
 pub mod ir;
-pub mod phases;
+pub mod spec;
 pub mod precomp;
 pub mod pretty;
 pub mod runtime;
 pub mod syntax;
+pub mod eval;
 
 fn main() {
     let code = std::fs::read_to_string("example.hvm").unwrap();

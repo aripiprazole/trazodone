@@ -4,7 +4,7 @@ use std::sync::Arc;
 use hvm::{Precomp, PrecompFuns, ReduceCtx};
 
 use crate::ir::rule::RuleGroup;
-use crate::phases::eval::{Context, Eval};
+use crate::eval::apply::{Context, Eval};
 
 pub fn compile_eval_precomp(
     precomp: &mut HashMap<u64, Precomp>,
