@@ -1,18 +1,15 @@
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
 
 pub trait HasTerm: Debug + Clone {
     type Term: Debug + Clone;
 }
 
-#[derive(Clone)]
-pub struct Label<I: HasTerm> {
-    pub basic_block: Rc<BasicBlock<I>>,
-}
+#[derive(Default, Clone)]
+pub struct Label(pub String);
 
 #[derive(Default, Debug, Clone)]
-pub struct Variable<I: HasTerm> {
-    pub declared_block: Rc<BasicBlock<I>>,
+pub struct Variable {
+    pub declared_block: Label,
     pub name: String,
 }
 
@@ -21,32 +18,32 @@ pub enum Terminator<I: HasTerm> {
     Unreachable,
     Debug(String),
     Return(I::Term),
-    Branch(Label<I>, Label<I>),
-    Jump(Label<I>),
-    Cond(I::Term, Label<I>, Label<I>),
+    Jump(Label),
+    Cond(I::Term, Label, Label),
 }
 
 #[derive(Debug, Clone)]
 pub struct BasicBlock<I: HasTerm> {
     pub label: String,
-    pub variables: Vec<Variable<I>>,
+    pub variables: Vec<Variable>,
     pub instructions: Vec<I>,
     pub terminator: Terminator<I>,
+    pub(crate) declared_blocks: Vec<BasicBlock<I>>,
 }
 
-impl<I: HasTerm> Label<I> {
+impl Label {
     /// Creates a new label for the given basic block.
     ///  * label is a reference to the basic block.
     ///  * label is used to reference the basic block in the graph.
-    pub fn new(to: Rc<BasicBlock<I>>) -> Self {
-        Self { basic_block: to }
+    pub fn new<I: HasTerm>(to: &BasicBlock<I>) -> Self {
+        Self(to.label.clone())
     }
 }
 
 // Implemented manually to avoid the `BasicBlock` of being displayed recursively
-impl<I: HasTerm> Debug for Label<I> {
+impl Debug for Label {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "@{}", self.basic_block.label)
+        write!(f, "@{}", self.0)
     }
 }
 
@@ -57,6 +54,7 @@ impl<I: HasTerm> Debug for Label<I> {
 impl<I: HasTerm> Default for BasicBlock<I> {
     fn default() -> Self {
         Self {
+            declared_blocks: Vec::new(),
             label: String::new(),
             variables: Vec::new(),
             instructions: Vec::new(),
@@ -66,11 +64,11 @@ impl<I: HasTerm> Default for BasicBlock<I> {
 }
 
 impl<I: HasTerm> BasicBlock<I> {
-    pub fn new(label: &str) -> Rc<Self> {
-        Rc::new(Self {
+    pub fn new(label: &str) -> Self {
+        Self {
             label: label.into(),
             ..Default::default()
-        })
+        }
     }
 
     pub fn with_return(&mut self, term: I::Term) {
@@ -85,11 +83,7 @@ impl<I: HasTerm> BasicBlock<I> {
         self.terminator = Terminator::Unreachable;
     }
 
-    pub fn with_cond(&mut self, cond: I::Term, then: Rc<BasicBlock<I>>, otherwise: Rc<BasicBlock<I>>) {
+    pub fn with_cond(&mut self, cond: I::Term, then: &BasicBlock<I>, otherwise: &BasicBlock<I>) {
         self.terminator = Terminator::Cond(cond, Label::new(then), Label::new(otherwise));
-    }
-
-    pub fn with_branch(&mut self, then: Rc<BasicBlock<I>>, otherwise: Rc<BasicBlock<I>>) {
-        self.terminator = Terminator::Branch(Label::new(then), Label::new(otherwise));
     }
 }

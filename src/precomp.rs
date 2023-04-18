@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use hvm::{Precomp, PrecompFuns, ReduceCtx};
 
-use crate::ir::apply::RuleGroup;
+use crate::ir::rule::RuleGroup;
 use crate::phases::eval::{Context, Eval};
 
 pub fn compile_eval_precomp(
@@ -12,37 +12,39 @@ pub fn compile_eval_precomp(
     smap: &'static [bool],
     group: RuleGroup,
 ) {
+    println!("Precomp {}", group.name);
+    println!("{}", group.hvm_visit);
     println!("{:?}", group.hvm_apply);
+    println!();
+
     let name = group.name.clone();
-    let xname = group.name.clone();
-    precomp.insert(
+    let hvm_apply = group.hvm_apply;
+    let hvm_visit = group.hvm_visit;
+
+    let item = Precomp {
         id,
-        Precomp {
-            id,
-            name: name.clone().leak(),
-            funs: Some(PrecompFuns {
-                apply: Arc::new(move |mut ctx| {
-                    println!("ir: {}", name.clone());
-                    let ctx = &mut ctx;
-                    let ctx = ctx as *const _ as *mut ReduceCtx;
-                    let mut context = Context {
-                        reduce: ctx,
-                        variables: HashMap::new(),
-                    };
+        name: name.leak(),
+        funs: Some(PrecompFuns {
+            apply: Arc::new(move |mut ctx| {
+                let ctx = &mut ctx;
+                let ctx = ctx as *const _ as *mut ReduceCtx;
+                let mut context = Context {
+                    reduce: ctx,
+                    variables: HashMap::new(),
+                };
 
-                    let group = group.clone();
-                    let done = group.hvm_apply.eval(&mut context);
-                    done.as_bool()
-                }),
-                visit: Arc::new(move |_| {
-                    println!("visit: {}", xname);
-
-                    false
-                }),
+                let done = hvm_apply.clone().eval(&mut context);
+                done.as_bool()
             }),
-            smap,
-        },
-    );
+            visit: Arc::new(move |ctx| {
+                hvm_visit.clone();
+
+                false
+            }),
+        }),
+        smap,
+    };
+    precomp.insert(id, item);
 }
 
 pub fn compile_precomp(

@@ -3,6 +3,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::ir::apply::*;
 
+pub mod visit;
+pub mod graph;
+
 pub struct Print<'a, P: Pretty + ?Sized>(usize, &'a P);
 
 impl<'a, P: Pretty> Display for Print<'a, P> {
