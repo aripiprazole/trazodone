@@ -29,11 +29,11 @@ where
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Terminator::Unreachable => write!(f, "unreachable"),
-            Terminator::Debug(message) => write!(f, "debug {message}"),
-            Terminator::Return(value) => write!(f, "return {value}"),
-            Terminator::Jump(label) => write!(f, "jump {label:?}"),
+            Terminator::Debug(message) => write!(f, "dbg {message}"),
+            Terminator::Return(value) => write!(f, "ret {value}"),
+            Terminator::Jump(label) => write!(f, "jmp {label:?}"),
             Terminator::Cond(cond, then, otherwise) => {
-                write!(f, "cond {cond:?} {then:?} {otherwise:?}")
+                write!(f, "cond ({cond}) {then:?} {otherwise:?}")
             }
         }
     }

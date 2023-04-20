@@ -6,13 +6,13 @@ impl Display for Term {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Term::Redex => {
-                write!(f, "redex!")
+                write!(f, "new_redex")
             }
             Term::CreateVBuf => {
-                write!(f, "create_vbuf!")
+                write!(f, "new_vbuf")
             }
             Term::CheckVLen => {
-                write!(f, "check_vlen!")
+                write!(f, "vlen == 0")
             }
             Term::True => {
                 write!(f, "true")
@@ -27,13 +27,13 @@ impl Display for Term {
 impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Instruction::IncreaseLen(index) => write!(f, "increase_len! {index}"),
-            Instruction::Visit(index) => write!(f, "visit! {index}"),
-            Instruction::SetVBuf(term) => write!(f, "set_vbuf!({term}"),
-            Instruction::SetGoup(term) => write!(f, "set_goup! {term}"),
-            Instruction::SetVLen => write!(f, "set_vlen!"),
-            Instruction::UpdateCont => write!(f, "set_cont!"),
-            Instruction::UpdateHost => write!(f, "set_host!"),
+            Instruction::IncreaseLen(index) => write!(f, "%vlen = + %vlen (int-is-whnf {index})"),
+            Instruction::Visit(index) => write!(f, "(visit-argument {index})"),
+            Instruction::SetVBuf(term) => write!(f, "%vbuf = {term}"),
+            Instruction::SetGoup(term) => write!(f, "%go-up = {term}"),
+            Instruction::SetVLen => write!(f, "%vlen = 0"),
+            Instruction::UpdateCont => write!(f, "ctx.cont = %go-up"),
+            Instruction::UpdateHost => write!(f, "ctx.host = $updated-host"),
         }
     }
 }

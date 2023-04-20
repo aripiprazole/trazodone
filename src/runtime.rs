@@ -62,10 +62,11 @@ pub unsafe extern "C" fn hvm__new_redex(ctx: ReduceContext, vlen: u64) -> *mut R
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__insert_redex(ctx: ReduceContext, redex: *mut Redex) -> u64 {
+pub unsafe extern "C" fn hvm__insert_redex(ctx: ReduceContext, vlen: u64) -> u64 {
     let ctx = get_context(ctx);
+    let redex = hvm::runtime::new_redex(*ctx.host, *ctx.cont, vlen);
 
-    ctx.redex.insert(ctx.tid, redex.read())
+    ctx.redex.insert(ctx.tid, redex)
 }
 
 #[no_mangle]
@@ -137,7 +138,7 @@ pub unsafe extern "C" fn hvm__increase_vlen(
 pub unsafe extern "C" fn hvm__create_vbuf(ctx: ReduceContext) -> *mut Box<[AtomicU64]> {
     let ctx = get_context(ctx);
 
-    unsafe { ctx.heap.vbuf.get_unchecked(ctx.tid) as *const _ as *mut Box<[AtomicU64]> }
+    std::mem::transmute(Box::leak(Box::new(ctx.heap.vbuf.get_unchecked(ctx.tid))))
 }
 
 #[no_mangle]

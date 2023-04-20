@@ -2,7 +2,10 @@ use std::sync::atomic::AtomicU64;
 
 use crate::eval::{Context, Eval, Object};
 use crate::ir::visit::{Instruction, Term};
-use crate::runtime::{hvm__create_vbuf, hvm__increase_vlen, hvm__insert_redex, hvm__new_redex, hvm__update_cont, hvm__update_host, hvm__visit};
+use crate::runtime::{
+    hvm__create_vbuf, hvm__increase_vlen, hvm__insert_redex, hvm__update_cont, hvm__update_host,
+    hvm__visit,
+};
 
 impl Eval for Instruction {
     type Output = ();
@@ -23,9 +26,9 @@ impl Eval for Instruction {
                 }
                 Instruction::UpdateCont => {
                     let variables = &mut context.variables;
-                    let vlen = variables.get("vlen").expect("vlen not found").as_u64();
+                    let goup = variables.get("goup").expect("goup not found").as_u64();
 
-                    hvm__update_cont(context.reduce, vlen);
+                    hvm__update_cont(context.reduce, goup);
                 }
                 Instruction::UpdateHost => {
                     let variables = &mut context.variables;
@@ -81,13 +84,20 @@ impl Eval for Term {
                     Object::Pointer(std::mem::transmute(hvm__create_vbuf(context.reduce)))
                 }
                 Term::Redex => {
-                    let vlen = context.variables.get("vlen").expect("vlen not found").as_u64();
-                    let redex = hvm__new_redex(context.reduce, vlen);
+                    let vlen = context
+                        .variables
+                        .get("vlen")
+                        .expect("vlen not found")
+                        .as_u64();
 
-                    Object::U64(hvm__insert_redex(context.reduce, redex))
+                    Object::U64(hvm__insert_redex(context.reduce, vlen))
                 }
                 Term::CheckVLen => {
-                    let vlen = context.variables.get("vlen").expect("vlen not found").as_u64();
+                    let vlen = context
+                        .variables
+                        .get("vlen")
+                        .expect("vlen not found")
+                        .as_u64();
 
                     Object::Bool(vlen != 0)
                 }
