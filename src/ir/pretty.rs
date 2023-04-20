@@ -137,7 +137,7 @@ impl Pretty for Term {
             Term::GetTag(GetTag { term }) => write!(f, "get-tag {}", term.boxed()),
             Term::Alloc(Alloc { size }) => write!(f, "alloc(arity: {size})"),
             Term::GetPosition(GetPosition { term, position }) => {
-                write!(f, "get-position {} {position}", term.boxed())
+                write!(f, "(get-position {} {position})", term.boxed())
             }
             Term::LoadArgument(LoadArgument {
                 term,

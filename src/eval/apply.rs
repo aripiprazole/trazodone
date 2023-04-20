@@ -1,14 +1,9 @@
 use crate::eval::{Context, Control, Eval, Object};
-
 use crate::ir::apply::{
     Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let,
     Link, LoadArgument, Position, PositionBinary, Tag, Term, Value, U60,
 };
-use crate::runtime::{
-    hvm__alloc, hvm__create_constructor, hvm__create_function, hvm__free, hvm__get_ext,
-    hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost,
-    hvm__link, hvm__load_argument,
-};
+use crate::runtime::{hvm__alloc, hvm__create_app, hvm__create_constructor, hvm__create_erased, hvm__create_function, hvm__create_lam, hvm__create_var, hvm__free, hvm__get_ext, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
 
 impl Eval for Position {
     type Output = u64;
@@ -90,6 +85,7 @@ impl Eval for Term {
                 Term::GetPosition(GetPosition { box term, position }) => {
                     Object::U64(hvm__get_loc(term.eval(context).as_u64(), position))
                 }
+                Term::Create(Value::Erased) => Object::U64(hvm__create_erased()),
                 Term::Create(Value::U60(U60(value))) => {
                     Object::U64(hvm__alloc(context.reduce, value))
                 }
@@ -98,6 +94,15 @@ impl Eval for Term {
                 }
                 Term::Create(Value::Constructor(FunctionId(_name, id), position)) => {
                     Object::U64(hvm__create_constructor(id, position.eval(context)))
+                }
+                Term::Create(Value::Lam(position)) => {
+                    Object::U64(hvm__create_lam(position.eval(context)))
+                }
+                Term::Create(Value::Atom(position)) => {
+                    Object::U64(hvm__create_var(position.eval(context)))
+                }
+                Term::Create(Value::App(position)) => {
+                    Object::U64(hvm__create_app(position.eval(context)))
                 }
                 Term::Ref(name) => context
                     .variables

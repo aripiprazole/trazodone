@@ -190,6 +190,30 @@ pub unsafe extern "C" fn hvm__create_constructor(fun: u64, position: Position) -
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_erased() -> Pointer {
+    hvm::runtime::Era()
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_app(position: Position) -> Pointer {
+    hvm::runtime::App(position)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_var(position: Position) -> Pointer {
+    hvm::runtime::Var(position)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_lam(position: Position) -> Pointer {
+    hvm::runtime::Lam(position)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__create_function(fun: u64, position: Position) -> Pointer {
     hvm::runtime::Fun(fun, position)
 }

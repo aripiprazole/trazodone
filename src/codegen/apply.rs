@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
 use crate::ir::syntax;
@@ -20,6 +22,7 @@ pub struct Codegen {
     name_index: u64,
     variables: Vec<Term>,
     instructions: Block,
+    lambdas: HashMap<u64, String>,
     global: Box<GlobalContext>,
 }
 
@@ -28,6 +31,7 @@ impl Codegen {
         Self {
             global,
             name_index: 0,
+            lambdas: HashMap::new(),
             variables: Vec::new(),
             instructions: Block::default(),
         }
@@ -109,7 +113,30 @@ impl Codegen {
             .push(Instruction::link(Position::Host, done));
     }
 
-    fn alloc(&mut self, size: u64) -> Term {
+    pub fn alloc_lam(&mut self, global_id: u64) -> String {
+        if let Some(global_term) = self.lambdas.get(&global_id) {
+            return global_term.clone();
+        }
+
+        let name = self.fresh_name("lam");
+        self.instructions
+            .push(Instruction::binding(&name, Term::alloc(2)));
+
+        if global_id != 0 {
+            // FIXME: sanitizer still can't detect if a scope-less lambda doesn't use its bound
+            //        variable, so we must write an Era() here. When it does, we can remove
+            //        this line.
+            self.instructions.push(Instruction::link(
+                Position::initial(&name),
+                Term::create_erased(),
+            ));
+            self.lambdas.insert(global_id, name.clone());
+        }
+
+        name
+    }
+
+    pub fn alloc(&mut self, size: u64) -> Term {
         // TODO:
         // This will avoid calls to alloc() by reusing nodes from the left-hand side. Sadly, this seems
         // to decrease HVM's performance in some cases, probably because of added cache misses. Perhaps
@@ -129,6 +156,7 @@ impl Codegen {
             global: self.global.clone(),
             name_index: self.name_index,
             variables: self.variables.clone(),
+            lambdas: self.lambdas.clone(),
             instructions: Block::with(instruction),
         }
     }

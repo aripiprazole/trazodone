@@ -1,10 +1,11 @@
-pub type Result<T> = std::result::Result<T, String>;
+use std::ops::Deref;
 
 use hvm::rulebook::RuleBook;
-use std::ops::Deref;
 
 use crate::ir::syntax;
 use crate::ir::syntax::*;
+
+pub type Result<T> = std::result::Result<T, String>;
 
 pub trait Transform {
     type Output;
@@ -82,10 +83,18 @@ impl ContextTransform for hvm::syntax::Term {
                 first: val0.transform(context)?.into(),
                 second: val1.transform(context)?.into(),
             })),
-            Lam { name, box body } => Ok(Term::Lam(syntax::Lam {
-                parameter: name,
-                value: body.transform(context)?.into(),
-            })),
+            Lam { name, box body } => {
+                context.variables.push(Variable {
+                    name: Some(name.clone()),
+                    index: 0,
+                    field_index: None,
+                });
+
+                Ok(Term::Lam(syntax::Lam {
+                    parameter: name,
+                    value: body.transform(context)?.into(),
+                }))
+            }
             App { box func, box argm } => Ok(Term::App(syntax::App {
                 is_function: false,
                 global_name: None,
@@ -100,7 +109,7 @@ impl ContextTransform for hvm::syntax::Term {
                     index: 0,
                     field_index: None,
                 })
-                    .into(),
+                .into(),
                 arguments: args
                     .iter()
                     .map(Deref::deref)
@@ -183,7 +192,11 @@ impl RuleGroup {
             .map(|id| book.id_to_smap.get(id).cloned().unwrap_or(vec![]))
             .unwrap_or(vec![]);
 
-        let strict_index = strict_parameters.iter().enumerate().filter(|x| *x.1).count() as u64;
+        let strict_index = strict_parameters
+            .iter()
+            .enumerate()
+            .filter(|x| *x.1)
+            .count() as u64;
 
         Ok(Self {
             name,
