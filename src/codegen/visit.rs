@@ -35,8 +35,8 @@ impl Codegen {
 
                         bb.instructions.push(Instruction::Visit(index as u64));
                     }
-                    bb.instructions.push(Instruction::SetCont);
-                    bb.instructions.push(Instruction::SetHost);
+                    bb.instructions.push(Instruction::UpdateCont);
+                    bb.instructions.push(Instruction::UpdateHost);
                     bb.with_return(Term::True);
                 });
 

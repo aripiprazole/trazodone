@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::eval::{Context, Control, Eval, Object};
 
 use crate::ir::apply::{
     Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let,
@@ -9,25 +9,6 @@ use crate::runtime::{
     hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost,
     hvm__link, hvm__load_argument,
 };
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Object {
-    U64(u64),
-    Bool(bool),
-    Pointer(*mut libc::c_void),
-}
-
-#[derive(Debug, Clone)]
-pub struct Context {
-    pub reduce: crate::runtime::ReduceContext,
-    pub variables: HashMap<String, Object>,
-}
-
-pub trait Eval {
-    type Output;
-
-    fn eval(self, context: &mut Context) -> Self::Output;
-}
 
 impl Eval for Position {
     type Output = u64;
@@ -83,6 +64,7 @@ impl Eval for Term {
                 Term::Current => Object::U64(hvm__get_term(context.reduce)),
                 Term::True => Object::Bool(true),
                 Term::False => Object::Bool(false),
+                Term::Alloc(Alloc { size }) => Object::U64(hvm__alloc(context.reduce, size)),
                 Term::Equal(box lhs, box rhs) => {
                     let lhs = lhs.eval(context);
                     let rhs = rhs.eval(context);
@@ -99,7 +81,6 @@ impl Eval for Term {
 
                     Object::U64(hvm__load_argument(context.reduce, term, argument_index))
                 }
-                Term::Alloc(Alloc { size }) => Object::U64(hvm__alloc(context.reduce, size)),
                 Term::GetNumber(GetNumber { box term }) => {
                     Object::U64(hvm__get_number(term.eval(context).as_u64()))
                 }
@@ -151,11 +132,6 @@ impl Eval for Term {
     }
 }
 
-pub enum Control {
-    Break(Object),
-    Continue,
-}
-
 impl Eval for Instruction {
     type Output = Control;
 
@@ -163,7 +139,6 @@ impl Eval for Instruction {
         unsafe {
             match self {
                 Instruction::Collect(_) => {}
-                Instruction::WHNF(_) => {}
                 Instruction::If(If {
                     condition,
                     then,
@@ -232,21 +207,5 @@ impl Eval for Block {
         }
 
         Object::Bool(false)
-    }
-}
-
-impl Object {
-    pub fn as_u64(&self) -> u64 {
-        match self {
-            Object::U64(value) => *value,
-            _ => panic!("Expected u64, got {:?}", self),
-        }
-    }
-
-    pub fn as_bool(&self) -> bool {
-        match self {
-            Object::Bool(value) => *value,
-            _ => panic!("Expected bool, got {:?}", self),
-        }
     }
 }

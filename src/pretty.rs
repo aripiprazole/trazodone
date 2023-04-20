@@ -218,9 +218,6 @@ impl Pretty for Instruction {
             Instruction::Free(Free { position, arity }) => {
                 write!(f, "{:>indent$}free {} {arity};", "", position.boxed())
             }
-            Instruction::WHNF(WHNF { strictness_index }) => {
-                write!(f, "{:>indent$}whnf {strictness_index};", "")
-            }
             Instruction::Let(Let { name, value }) => {
                 write!(f, "{:>indent$}let {name} = {};", "", value.boxed())
             }

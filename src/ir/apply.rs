@@ -90,7 +90,6 @@ pub enum Instruction {
     Link(Link),
     Collect(Collect),
     Free(Free),
-    WHNF(WHNF),
     Term(Term),
     Return(Term),
     IncrementCost,

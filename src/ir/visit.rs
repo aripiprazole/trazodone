@@ -9,14 +9,13 @@ pub enum Instruction {
     SetVBuf(Term),
     SetGoup(Term),
     SetVLen,
-    SetCont,
-    SetHost,
+    UpdateCont,
+    UpdateHost,
 }
 
 #[derive(Debug, Clone)]
 pub enum Term {
     Redex,
-    Insert(u64, Box<Term>),
 
     // *internal*
     CreateVBuf,
