@@ -1,10 +1,47 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use hvm::{Precomp, PrecompFuns, ReduceCtx};
+use hvm::{Precomp, PRECOMP, PrecompFuns, ReduceCtx};
+use hvm::rulebook::RuleBook;
+use itertools::Itertools;
 
 use crate::eval::{Context, Control, Eval};
 use crate::ir::rule::RuleGroup;
+
+pub fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
+    let mut precomp = PRECOMP
+        .clone()
+        .iter()
+        .map(|precomp| (precomp.id, precomp.clone()))
+        .collect::<HashMap<_, _>>();
+
+    for (id, name) in itertools::sorted(book.id_to_name.iter()) {
+        let smap = book.id_to_smap.get(id).unwrap().clone().leak();
+        if *id <= 29 {
+            // skip built-in constructors
+            continue;
+        }
+
+        match groups.get(name) {
+            Some(group) => {
+                compile_eval_precomp(&mut precomp, *id, smap, group.clone());
+            }
+            None => {
+                compile_precomp(&mut precomp, *id, name.clone().leak(), smap);
+            }
+        }
+    }
+
+    unsafe {
+        let reordered = precomp
+            .iter()
+            .sorted_by_key(|(id, _)| *id)
+            .map(|(_, precomp)| precomp.clone())
+            .collect::<Vec<_>>();
+
+        *Arc::get_mut_unchecked(&mut PRECOMP.clone()) = Box::new(reordered);
+    }
+}
 
 pub fn compile_eval_precomp(
     precomp: &mut HashMap<u64, Precomp>,
@@ -12,11 +49,6 @@ pub fn compile_eval_precomp(
     smap: &'static [bool],
     group: RuleGroup,
 ) {
-    println!("Precomp {}", group.name);
-    println!("{}", group.hvm_visit);
-    println!("{:?}", group.hvm_apply);
-    println!();
-
     let name = group.name.clone();
     let hvm_apply = group.hvm_apply;
     let hvm_visit = group.hvm_visit;

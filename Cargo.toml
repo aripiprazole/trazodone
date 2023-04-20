@@ -10,3 +10,5 @@ hvm = { git = "https://github.com/aripiprazole/HVM.git" }
 libc = "0.2.139"
 llvm-sys = "150.0.5"
 itertools = "0.10"
+clap = { version = "4.2.4", features = ["derive"] }
+colored = "2.0.0"
