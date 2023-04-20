@@ -2,7 +2,7 @@ use std::sync::atomic::AtomicU64;
 
 use crate::eval::{Context, Eval, Object};
 use crate::ir::visit::{Instruction, Term};
-use crate::runtime::{hvm__create_vbuf, hvm__increase_vlen, hvm__new_redex, hvm__update_cont, hvm__update_host, hvm__visit};
+use crate::runtime::{hvm__create_vbuf, hvm__increase_vlen, hvm__insert_redex, hvm__new_redex, hvm__update_cont, hvm__update_host, hvm__visit};
 
 impl Eval for Instruction {
     type Output = ();
@@ -82,8 +82,9 @@ impl Eval for Term {
                 }
                 Term::Redex => {
                     let vlen = context.variables.get("vlen").expect("vlen not found").as_u64();
+                    let redex = hvm__new_redex(context.reduce, vlen);
 
-                    Object::Pointer(std::mem::transmute(hvm__new_redex(context.reduce, vlen)))
+                    Object::U64(hvm__insert_redex(context.reduce, redex))
                 }
                 Term::CheckVLen => {
                     let vlen = context.variables.get("vlen").expect("vlen not found").as_u64();

@@ -72,7 +72,7 @@ impl ContextTransform for hvm::syntax::Term {
                     if variable.name == Some(name.clone()) {
                         Some(Ok(Term::Atom(Atom {
                             name: name.clone(),
-                            index: index as u64,
+                            index: if index == 0 { 0 } else { (index - 1) as u64 },
                             field_index: variable.field_index,
                         })))
                     } else {

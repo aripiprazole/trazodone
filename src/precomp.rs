@@ -67,6 +67,8 @@ pub fn compile_eval_precomp(
                 done.as_bool()
             }),
             visit: Arc::new(move |mut ctx| {
+                // FIXME: its broken :c
+                return false;
                 let mut context = Context::new(&mut ctx as *const _ as *mut ReduceCtx);
                 let Control::Break(done) = hvm_visit.clone().eval(&mut context) else {
                     panic!("the program did not finished correctly.")

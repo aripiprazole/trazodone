@@ -10,18 +10,18 @@ pub type FreeIndex = u64;
 pub type FreeArity = u64;
 pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
 
+pub mod binary;
 pub mod collect;
 pub mod deconstruct;
 pub mod free;
 pub mod term;
 pub mod variable;
-pub mod binary;
 
 pub type Result<T> = std::result::Result<T, String>;
 
 pub struct Codegen {
     name_index: u64,
-    variables: Vec<Term>,
+    variables: Vec<(String, Term)>,
     instructions: Block,
     lambdas: HashMap<u64, String>,
     global: Box<GlobalContext>,
@@ -58,7 +58,10 @@ impl Codegen {
         for rule in rules {
             let collect = self.create_collect(&rule);
 
-            self.variables = collect.iter().map(|variable| variable.as_term()).collect();
+            self.variables = collect
+                .iter()
+                .map(|variable| ("*".into(), variable.as_term()))
+                .collect();
 
             let mut match_rule = Term::True;
             for (i, parameter) in rule.parameters.iter().cloned().enumerate() {

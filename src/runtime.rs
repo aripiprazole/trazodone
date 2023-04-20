@@ -62,6 +62,14 @@ pub unsafe extern "C" fn hvm__new_redex(ctx: ReduceContext, vlen: u64) -> *mut R
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__insert_redex(ctx: ReduceContext, redex: *mut Redex) -> u64 {
+    let ctx = get_context(ctx);
+
+    ctx.redex.insert(ctx.tid, redex.read())
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__update_cont(ctx: ReduceContext, goup: u64) {
     let ctx = get_context(ctx);
 

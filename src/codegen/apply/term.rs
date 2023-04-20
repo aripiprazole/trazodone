@@ -10,8 +10,13 @@ impl Codegen {
         match term {
             U60(u60) => Term::create_u60(u60),
             F60(f60) => Term::create_f60(f60),
-            Let(let_expr) => self.build_let(*let_expr.value, *let_expr.body),
-            Lam(lam_expr) => self.build_lam(lam_expr.global_id, lam_expr.erased, *lam_expr.value),
+            Let(let_expr) => self.build_let(let_expr.name, *let_expr.value, *let_expr.body),
+            Lam(lam_expr) => self.build_lam(
+                lam_expr.parameter,
+                lam_expr.global_id,
+                lam_expr.erased,
+                *lam_expr.value,
+            ),
             Binary(binary_expr) => {
                 self.build_binary(*binary_expr.lhs, binary_expr.op, *binary_expr.rhs)
             }
@@ -28,10 +33,16 @@ impl Codegen {
         }
     }
 
-    fn build_lam(&mut self, global_id: u64, erased: bool, value: syntax::Term) -> Term {
+    fn build_lam(
+        &mut self,
+        parameter: String,
+        global_id: u64,
+        erased: bool,
+        value: syntax::Term,
+    ) -> Term {
         let name = self.alloc_lam(global_id);
         self.variables
-            .push(Term::create_atom(Position::initial(&name)));
+            .push((parameter, Term::create_atom(Position::initial(&name))));
         let value = self.build_term(value);
         self.variables.pop();
         if erased {
@@ -48,18 +59,26 @@ impl Codegen {
 
     fn build_atom(&mut self, name: String, index: u64, field_index: Option<u64>) -> Term {
         match self.variables.get(index as usize) {
-            Some(value) => value.clone(),
-            None => Term::NotFound(syntax::Atom {
-                name,
-                index,
-                field_index,
-            }),
+            Some((_, value)) => value.clone(),
+            // simple workaraound
+            None => self
+                .variables
+                .iter()
+                .find(|(var_name, _)| var_name == &name)
+                .map(|(_, value)| value.clone())
+                .unwrap_or_else(|| {
+                    Term::NotFound(syntax::Atom {
+                        name,
+                        index,
+                        field_index,
+                    })
+                }),
         }
     }
 
-    fn build_let(&mut self, value: syntax::Term, body: syntax::Term) -> Term {
+    fn build_let(&mut self, name: String, value: syntax::Term, body: syntax::Term) -> Term {
         let value = self.build_term(value);
-        self.variables.push(value);
+        self.variables.push((name, value));
         let body = self.build_term(body);
         self.variables.pop();
 

@@ -1,4 +1,7 @@
 (Add (Succ a) b) = (Succ (Add a b))
 (Add  Zero    b) =  b
 
-(Main) = (+ 10 10)
+(Main) =
+  let f = (@x (Add x (Succ Zero)))
+  let g = (@z (Add z (Succ Zero)))
+  (f (g (Succ (Succ Zero))))
