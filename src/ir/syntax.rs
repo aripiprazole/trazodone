@@ -68,6 +68,8 @@ pub struct Super {
 
 #[derive(Debug, Clone)]
 pub struct Lam {
+    pub erased: bool,
+    pub global_id: u64,
     pub parameter: String,
     pub value: Box<Term>,
 }

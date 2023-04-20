@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use hvm::rulebook::RuleBook;
+use hvm::{get_global_name_misc, hash};
 
 use crate::ir::syntax;
 use crate::ir::syntax::*;
@@ -90,7 +91,16 @@ impl ContextTransform for hvm::syntax::Term {
                     field_index: None,
                 });
 
+                let erased = name == "*";
+                let global_id = if get_global_name_misc(&name).is_some() {
+                    hash(&name)
+                } else {
+                    0
+                };
+
                 Ok(Term::Lam(syntax::Lam {
+                    global_id,
+                    erased,
                     parameter: name,
                     value: body.transform(context)?.into(),
                 }))

@@ -11,7 +11,7 @@ impl Codegen {
             U60(u60) => Term::create_u60(u60),
             F60(f60) => Term::create_f60(f60),
             Let(let_expr) => self.build_let(*let_expr.value, *let_expr.body),
-            Lam(lam_expr) => self.build_lam(*lam_expr.value),
+            Lam(lam_expr) => self.build_lam(lam_expr.global_id, lam_expr.erased, *lam_expr.value),
             Atom(atom_expr) => {
                 self.build_atom(atom_expr.name, atom_expr.index, atom_expr.field_index)
             }
@@ -27,9 +27,7 @@ impl Codegen {
         }
     }
 
-    fn build_lam(&mut self, value: syntax::Term) -> Term {
-        let global_id = 0; // TODO
-        let erased = false; // TODO
+    fn build_lam(&mut self, global_id: u64, erased: bool, value: syntax::Term) -> Term {
         let name = self.alloc_lam(global_id);
         self.variables
             .push(Term::create_atom(Position::initial(&name)));
