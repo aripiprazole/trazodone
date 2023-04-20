@@ -1,7 +1,7 @@
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
-use crate::syntax;
-use crate::syntax::Parameter;
+use crate::ir::syntax;
+use crate::ir::syntax::Parameter;
 
 pub type Insertion = Block;
 pub type FreeIndex = u64;

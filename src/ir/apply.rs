@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use hvm::syntax::Oper;
 
-use crate::syntax;
+use crate::ir::syntax;
 
 #[derive(Default, Clone)]
 pub struct Block {

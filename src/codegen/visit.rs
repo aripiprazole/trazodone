@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use crate::ir::graph::BasicBlock;
 use crate::ir::visit::{Instruction, Term};
-use crate::syntax::RuleGroup;
+use crate::ir::syntax::RuleGroup;
 
 #[derive(Default, Debug, Clone)]
 pub struct Codegen {

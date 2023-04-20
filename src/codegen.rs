@@ -3,8 +3,9 @@ use std::collections::HashMap;
 pub mod apply;
 pub mod reduce;
 pub mod visit;
+pub mod syntax;
 
-impl crate::syntax::RuleGroup {
+impl crate::ir::syntax::RuleGroup {
     pub fn ir_codegen(
         self,
         context: Box<GlobalContext>,

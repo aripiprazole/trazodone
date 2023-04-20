@@ -1,12 +1,11 @@
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::{Instruction, Variable};
-use crate::syntax;
-use crate::syntax::Rule;
+use crate::ir::syntax::Rule;
 
 impl Codegen {
     pub fn create_collect(&mut self, rule: &Rule) -> Vec<Variable> {
-        use syntax::Parameter::*;
-        use syntax::Pattern;
+        use crate::ir::syntax::Parameter::*;
+        use crate::ir::syntax::Pattern;
 
         rule.parameters
             .iter()

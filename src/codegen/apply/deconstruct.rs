@@ -1,12 +1,12 @@
 use crate::codegen::apply::Codegen;
 use crate::codegen::build_name;
 use crate::ir::apply::{Tag, Term};
-use crate::syntax;
-use crate::syntax::*;
+use crate::ir::syntax;
+use crate::ir::syntax::*;
 
 impl Codegen {
     pub fn build_match(&self, group: &RuleGroup, i: usize, parameter: Parameter) -> Term {
-        use syntax::Parameter::*;
+        use crate::ir::syntax::Parameter::*;
 
         let argument = Term::reference(&format!("arg{i}"));
 

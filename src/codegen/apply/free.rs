@@ -1,12 +1,12 @@
 use crate::codegen::apply::{Codegen, FreeVec};
 use crate::ir::apply::Term;
 use crate::ir::apply::{Free, Instruction};
-use crate::syntax;
-use crate::syntax::Rule;
+use crate::ir::syntax;
+use crate::ir::syntax::Rule;
 
 impl Codegen {
     pub fn create_free(&mut self, rule: &Rule) -> FreeVec {
-        use syntax::Parameter::*;
+        use crate::ir::syntax::Parameter::*;
 
         rule.parameters
             .iter()

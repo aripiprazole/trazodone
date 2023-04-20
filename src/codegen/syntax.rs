@@ -3,8 +3,8 @@ pub type Result<T> = std::result::Result<T, String>;
 use hvm::rulebook::RuleBook;
 use std::ops::Deref;
 
-use crate::syntax;
-use crate::syntax::*;
+use crate::ir::syntax;
+use crate::ir::syntax::*;
 
 pub trait Transform {
     type Output;

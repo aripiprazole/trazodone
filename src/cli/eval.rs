@@ -7,9 +7,9 @@ use hvm::rulebook::RuleBook;
 use ErrorKind::InvalidValue;
 
 use crate::cli::{Cli, EvalArgs};
+use crate::codegen::syntax::Transform;
 use crate::codegen::{build_name, GlobalContext};
 use crate::ir::rule::RuleGroup;
-use crate::spec::Transform;
 
 pub fn run_eval(args: EvalArgs) {
     let mut cli = Cli::command();
@@ -61,7 +61,8 @@ fn setup_eval_environment(code: &str) {
         Err(err) => {
             eprintln!("Failed to parse: {}", code);
             eprintln!("{}", err);
-            cli.error(ErrorKind::InvalidValue, "Failed to parse file.").exit();
+            cli.error(ErrorKind::InvalidValue, "Failed to parse file.")
+                .exit();
         }
     };
     let book = hvm::language::rulebook::gen_rulebook(&file);
@@ -85,8 +86,7 @@ fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {
 }
 
 fn ir_codegen_book(book: &RuleBook, global: &Box<GlobalContext>) -> HashMap<String, RuleGroup> {
-    book
-        .clone()
+    book.clone()
         .transform()
         .unwrap()
         .iter()

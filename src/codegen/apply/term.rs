@@ -1,11 +1,11 @@
 use crate::codegen::apply::Codegen;
 use crate::codegen::build_name;
 use crate::ir::apply::*;
-use crate::syntax;
+use crate::ir::syntax;
 
 impl Codegen {
     pub fn build_term(&mut self, term: syntax::Term) -> Term {
-        use syntax::Term::*;
+        use crate::ir::syntax::Term::*;
 
         match term {
             U60(u60) => Term::create_u60(u60),

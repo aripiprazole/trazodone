@@ -4,14 +4,11 @@
 
 pub mod cli;
 pub mod codegen;
-pub mod cstr;
 pub mod eval;
 pub mod ir;
 pub mod precomp;
-pub mod pretty;
 pub mod runtime;
-pub mod spec;
-pub mod syntax;
+pub mod llvm;
 
 fn main() {
     cli::run_cli();
