@@ -1,4 +1,4 @@
 (Add (Succ a) b) = (Succ (Add a b))
 (Add  Zero    b) =  b
 
-(Main) = ((@x (Add (Succ Zero) x)) (Succ (Succ Zero)))
+(Main) = (+ 10 10)

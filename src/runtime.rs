@@ -196,6 +196,12 @@ pub unsafe extern "C" fn hvm__create_erased() -> Pointer {
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__create_binary(operand: Position, position: Position) -> Pointer {
+    hvm::runtime::Op2(operand, position)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__create_app(position: Position) -> Pointer {
     hvm::runtime::App(position)
 }

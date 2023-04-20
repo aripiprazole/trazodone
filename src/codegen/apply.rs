@@ -15,6 +15,7 @@ pub mod deconstruct;
 pub mod free;
 pub mod term;
 pub mod variable;
+pub mod binary;
 
 pub type Result<T> = std::result::Result<T, String>;
 

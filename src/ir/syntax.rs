@@ -75,13 +75,6 @@ pub struct Lam {
 }
 
 #[derive(Debug, Clone)]
-pub struct Ref {
-    pub constructor: Box<Term>,
-    pub meta_name: String,
-    pub index: u64,
-}
-
-#[derive(Debug, Clone)]
 pub struct Binary {
     pub lhs: Box<Term>,
     pub op: Oper,
@@ -107,7 +100,4 @@ pub enum Term {
     Lam(Lam),
     Super(Super),
     Binary(Binary),
-
-    // * Internals
-    Ref(Ref),
 }

@@ -1,9 +1,15 @@
+use crate::codegen::apply::binary::build_binary_op;
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::apply::{
     Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let,
     Link, LoadArgument, Position, PositionBinary, Tag, Term, Value, U60,
 };
-use crate::runtime::{hvm__alloc, hvm__create_app, hvm__create_constructor, hvm__create_erased, hvm__create_function, hvm__create_lam, hvm__create_u60, hvm__create_var, hvm__free, hvm__get_ext, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term, hvm__increment_cost, hvm__link, hvm__load_argument};
+use crate::runtime::{
+    hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,
+    hvm__create_function, hvm__create_lam, hvm__create_u60, hvm__create_var, hvm__free,
+    hvm__get_ext, hvm__get_host, hvm__get_loc, hvm__get_number, hvm__get_tag, hvm__get_term,
+    hvm__increment_cost, hvm__link, hvm__load_argument,
+};
 
 impl Eval for Position {
     type Output = u64;
@@ -86,9 +92,7 @@ impl Eval for Term {
                     Object::U64(hvm__get_loc(term.eval(context).as_u64(), position))
                 }
                 Term::Create(Value::Erased) => Object::U64(hvm__create_erased()),
-                Term::Create(Value::U60(U60(value))) => {
-                    Object::U64(hvm__create_u60(value))
-                }
+                Term::Create(Value::U60(U60(value))) => Object::U64(hvm__create_u60(value)),
                 Term::Create(Value::Function(FunctionId(_name, id), position)) => {
                     Object::U64(hvm__create_function(id, position.eval(context)))
                 }
@@ -103,6 +107,11 @@ impl Eval for Term {
                 }
                 Term::Create(Value::App(position)) => {
                     Object::U64(hvm__create_app(position.eval(context)))
+                }
+                Term::Create(Value::Binary(binary, position)) => {
+                    let operand = build_binary_op(binary.op);
+
+                    Object::U64(hvm__create_binary(operand, position.eval(context)))
                 }
                 Term::Ref(name) => context
                     .variables

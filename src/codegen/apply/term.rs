@@ -12,6 +12,9 @@ impl Codegen {
             F60(f60) => Term::create_f60(f60),
             Let(let_expr) => self.build_let(*let_expr.value, *let_expr.body),
             Lam(lam_expr) => self.build_lam(lam_expr.global_id, lam_expr.erased, *lam_expr.value),
+            Binary(binary_expr) => {
+                self.build_binary(*binary_expr.lhs, binary_expr.op, *binary_expr.rhs)
+            }
             Atom(atom_expr) => {
                 self.build_atom(atom_expr.name, atom_expr.index, atom_expr.field_index)
             }
@@ -22,8 +25,6 @@ impl Codegen {
             },
             Duplicate(_) => todo!(),
             Super(_) => todo!(),
-            Binary(_) => todo!(),
-            Ref(_) => todo!(),
         }
     }
 
