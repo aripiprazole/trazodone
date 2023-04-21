@@ -127,7 +127,7 @@ impl Codegen {
             .unwrap_or_else(|| panic!("no constructor for {}", compiled_global_name));
 
         Term::create_constructor(
-            FunctionId::new(&compiled_global_name, *index),
+            FunctionId::new_debug(&compiled_global_name, global_name, *index),
             Position::initial(&name),
         )
     }
@@ -157,7 +157,7 @@ impl Codegen {
             .unwrap_or_else(|| panic!("no function for {}", compiled_global_name));
 
         Term::create_function(
-            FunctionId::new(&compiled_global_name, *index),
+            FunctionId::new_debug(&compiled_global_name, global_name, *index),
             Position::initial(&name),
         )
     }

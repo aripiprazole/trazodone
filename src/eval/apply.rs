@@ -93,10 +93,10 @@ impl Eval for Term {
                 }
                 Term::Create(Value::Erased) => Object::U64(hvm__create_erased()),
                 Term::Create(Value::U60(U60(value))) => Object::U64(hvm__create_u60(value)),
-                Term::Create(Value::Function(FunctionId(_name, id), position)) => {
+                Term::Create(Value::Function(FunctionId(_, _, id), position)) => {
                     Object::U64(hvm__create_function(id, position.eval(context)))
                 }
-                Term::Create(Value::Constructor(FunctionId(_name, id), position)) => {
+                Term::Create(Value::Constructor(FunctionId(_, _, id), position)) => {
                     Object::U64(hvm__create_constructor(id, position.eval(context)))
                 }
                 Term::Create(Value::Lam(position)) => {

@@ -21,8 +21,10 @@ pub struct U60(pub u64);
 #[derive(Debug, Clone)]
 pub struct F60(pub f64);
 
+pub type DebugName = Option<String>;
+
 #[derive(Debug, Clone)]
-pub struct FunctionId(pub String, pub u64);
+pub struct FunctionId(pub String, pub DebugName, pub u64);
 
 #[derive(Clone)]
 pub enum PositionBinary {
@@ -447,7 +449,11 @@ impl Position {
 
 impl FunctionId {
     pub fn new(name: &str, id: u64) -> Self {
-        FunctionId(name.into(), id)
+        FunctionId(name.into(), None, id)
+    }
+
+    pub fn new_debug(name: &str, debug_name: String, id: u64) -> Self {
+        FunctionId(name.into(), Some(debug_name), id)
     }
 }
 
@@ -472,7 +478,7 @@ impl Block {
         Self {
             extensions: vec![],
             tags: vec![],
-            instructions
+            instructions,
         }
     }
 
