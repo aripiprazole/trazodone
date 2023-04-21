@@ -26,7 +26,7 @@ pub type DebugName = Option<String>;
 #[derive(Debug, Clone)]
 pub struct FunctionId(pub String, pub DebugName, pub u64);
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum PositionBinary {
     Con(u64),
     Sum(Box<PositionBinary>, Box<PositionBinary>),
@@ -512,37 +512,37 @@ impl Display for Tag {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Tag::DUP0 => {
-                write!(f, "DUP0")
+                write!(f, "Dup0")
             }
             Tag::DUP1 => {
-                write!(f, "DUP1")
+                write!(f, "Dup1")
             }
             Tag::ATOM => {
-                write!(f, "ATOM")
+                write!(f, "Atom")
             }
             Tag::ARGUMENT => {
-                write!(f, "ARGUMENT")
+                write!(f, "Argument")
             }
             Tag::ERASED => {
-                write!(f, "ERASED")
+                write!(f, "Erased")
             }
             Tag::LAM => {
-                write!(f, "LAM")
+                write!(f, "Lam")
             }
             Tag::APP => {
-                write!(f, "APP")
+                write!(f, "App")
             }
             Tag::SUPER => {
-                write!(f, "SUPER")
+                write!(f, "Super")
             }
             Tag::CONSTRUCTOR => {
-                write!(f, "CONSTRUCTOR")
+                write!(f, "Constructor")
             }
             Tag::FUNCTION => {
-                write!(f, "FUNCTION")
+                write!(f, "Function")
             }
             Tag::BINARY => {
-                write!(f, "BINARY")
+                write!(f, "Binary")
             }
             Tag::U60 => {
                 write!(f, "U60")
@@ -551,7 +551,7 @@ impl Display for Tag {
                 write!(f, "F60")
             }
             Tag::NIL => {
-                write!(f, "NIL")
+                write!(f, "Nil")
             }
         }
     }
