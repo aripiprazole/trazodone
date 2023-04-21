@@ -13,6 +13,7 @@ pub type FreeArity = u64;
 pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
 
 pub mod binary;
+pub mod call;
 pub mod collect;
 pub mod deconstruct;
 pub mod free;
@@ -83,7 +84,7 @@ impl Codegen {
                 self.build_link(done);
                 self.build_collect(collect);
                 self.build_free(&rule, group);
-                self.instructions.push(Instruction::Return(Term::True));
+                self.instr(Instruction::Return(Term::True));
             } else {
                 let mut then: Codegen = self.new_block(Instruction::IncrementCost);
                 self.build_constructor_patterns(&rule, &mut then.instructions);
@@ -91,10 +92,10 @@ impl Codegen {
                 then.build_link(done);
                 then.build_collect(collect);
                 then.build_free(&rule, group);
-                then.instructions.push(Instruction::Return(Term::True));
+                then.instr(Instruction::Return(Term::True));
 
-                self.instructions
-                    .push(Instruction::cond(match_rule, then.instructions, None));
+                self
+                    .instr(Instruction::cond(match_rule, then.instructions, None));
             }
         }
 
@@ -140,14 +141,13 @@ impl Codegen {
         }
 
         let name = self.fresh_name("lam");
-        self.instructions
-            .push(Instruction::binding(&name, Term::alloc(2)));
+        self.instr(Instruction::binding(&name, Term::alloc(2)));
 
         if global_id != 0 {
             // FIXME: sanitizer still can't detect if a scope-less lambda doesn't use its bound
             //        variable, so we must write an Era() here. When it does, we can remove
             //        this line.
-            self.instructions.push(Instruction::link(
+            self.instr(Instruction::link(
                 Position::initial(&name),
                 Term::create_erased(),
             ));
@@ -157,6 +157,12 @@ impl Codegen {
         name
     }
 
+    pub fn alloc_tag(&mut self, tag: Tag) -> Term {
+        self.constant_tags.insert(tag.to_string(), tag.id());
+
+        Term::alloc(tag.size())
+    }
+
     pub fn alloc(&mut self, size: u64) -> Term {
         // TODO:
         // This will avoid calls to alloc() by reusing nodes from the left-hand side. Sadly, this seems
@@ -164,6 +170,10 @@ impl Codegen {
         // this should be turned off. I'll decide later.
 
         Term::alloc(size)
+    }
+
+    pub fn instr(&mut self, instruction: Instruction) {
+        self.instructions.push(instruction);
     }
 
     fn build_constructor_patterns(&mut self, rule: &Rule, then: &mut Block) {

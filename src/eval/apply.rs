@@ -21,7 +21,11 @@ impl Eval for Position {
                     gate_index,
                     reference_name,
                 } => {
-                    let n = context.variables.get(&reference_name).unwrap().as_u64();
+                    let n = context
+                        .variables
+                        .get(&reference_name)
+                        .unwrap_or_else(|| panic!("unknown {reference_name}"))
+                        .as_u64();
 
                     n + gate_index.eval(context)
                 }

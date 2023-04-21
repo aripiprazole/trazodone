@@ -488,6 +488,25 @@ impl Block {
 }
 
 impl Tag {
+    pub const fn size(&self) -> u64 {
+        match self {
+            Tag::DUP0 => 1,
+            Tag::DUP1 => 1,
+            Tag::ATOM => 1,
+            Tag::ARGUMENT => 1,
+            Tag::ERASED => 1,
+            Tag::LAM => 2,
+            Tag::SUPER => 3,
+            Tag::APP => 2,
+            Tag::CONSTRUCTOR => 2,
+            Tag::FUNCTION => 2,
+            Tag::BINARY => 2,
+            Tag::U60 => 1,
+            Tag::F60 => 1,
+            Tag::NIL => 0
+        }
+    }
+
     pub const fn id(&self) -> u64 {
         match self {
             Tag::DUP0 => 0x0,

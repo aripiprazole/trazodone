@@ -14,20 +14,15 @@ impl Codegen {
         // TODO: Optimization: do inline operation, avoiding Op2 allocation, when operands are already number
         let binary_alloc = self.alloc(2);
 
-        self.instructions
-            .push(Instruction::binding(&binary, binary_alloc));
-
-        self.instructions
-            .push(Instruction::link(Position::initial(&binary), lhs.clone()));
-
-        self.instructions
-            .push(Instruction::link(Position::new(&binary, 1), rhs.clone()));
+        self.instr(Instruction::binding(&binary, binary_alloc));
+        self.instr(Instruction::link(Position::initial(&binary), lhs.clone()));
+        self.instr(Instruction::link(Position::new(&binary, 1), rhs.clone()));
 
         Term::create_binary(lhs, oper, rhs, Position::initial(&binary))
     }
 }
 
-pub const fn build_binary_op(oper: Oper) -> u64{
+pub const fn build_binary_op(oper: Oper) -> u64 {
     match oper {
         Oper::Add => 0x0,
         Oper::Sub => 0x1,

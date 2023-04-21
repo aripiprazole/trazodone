@@ -1,4 +1,6 @@
-use crate::ir::graph::HasTerm;
+use crate::ir::graph::{BasicBlock, HasTerm};
+
+pub type VisitBlock = BasicBlock<Instruction>;
 
 #[derive(Debug, Clone)]
 pub enum Instruction {
