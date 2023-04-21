@@ -1,6 +1,7 @@
+use core::slice::SlicePattern;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use hvm::{Redex, ReduceCtx};
+use hvm::ReduceCtx;
 
 pub type ReduceContext = *mut ReduceCtx<'static>;
 pub type Pointer = u64;
@@ -54,14 +55,6 @@ pub unsafe extern "C" fn hvm__free(ctx: ReduceContext, position: Position, arity
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__new_redex(ctx: ReduceContext, vlen: u64) -> *mut Redex {
-    let ctx = get_context(ctx);
-
-    Box::leak(Box::new(hvm::runtime::new_redex(*ctx.host, *ctx.cont, vlen)))
-}
-
-#[no_mangle]
-#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__insert_redex(ctx: ReduceContext, vlen: u64) -> u64 {
     let ctx = get_context(ctx);
     let redex = hvm::runtime::new_redex(*ctx.host, *ctx.cont, vlen);
@@ -77,68 +70,68 @@ pub unsafe extern "C" fn hvm__update_cont(ctx: ReduceContext, goup: u64) {
     *ctx.cont = goup;
 }
 
+/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__update_host(
-    ctx: ReduceContext,
-    vbuf: *mut Box<[AtomicU64]>,
-    vlen: u64,
-) {
+pub unsafe extern "C" fn hvm__update_host(ctx: ReduceContext, vbuf: &[AtomicU64], vlen: u64) {
     let ctx = get_context(ctx);
-
-    let vbuf = vbuf.read();
-    let host = vbuf.get_unchecked((vlen - 1) as usize).load(Ordering::Relaxed);
+    let host = vbuf
+        .get_unchecked((vlen - 1) as usize)
+        .load(Ordering::Relaxed);
 
     *ctx.host = host;
 }
 
+/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__visit(
     ctx: ReduceContext,
     parameter_index: u64,
     goup: u64,
-    vbuf: *mut Box<[AtomicU64]>,
+    vbuf: &[AtomicU64],
     vlen: u64,
 ) {
     let ctx = get_context(ctx);
 
     if parameter_index < vlen - 1 {
-        let vbuf = vbuf.read();
-        let vbuf = vbuf.get_unchecked(0).load(Ordering::Relaxed);
+        let vbuf = vbuf
+            .get_unchecked(parameter_index as usize)
+            .load(Ordering::Relaxed);
         let visit = hvm::runtime::new_visit(vbuf, ctx.hold, goup);
         ctx.visit.push(visit);
     }
 }
 
+/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__increase_vlen(
     ctx: ReduceContext,
     parameter_index: u64,
-    vbuf: *mut Box<[AtomicU64]>,
+    vbuf: &[AtomicU64],
     vlen: u64,
 ) -> u64 {
     let ctx = get_context(ctx);
 
-    if !hvm::runtime::is_whnf(hvm::runtime::load_arg(ctx.heap, ctx.term, parameter_index)) {
-        let vbuf = vbuf.read();
+    if hvm::runtime::is_whnf(hvm::runtime::load_arg(ctx.heap, ctx.term, parameter_index)) {
+        0
+    } else {
         let atomic = vbuf.get_unchecked(vlen as usize);
         let position = hvm::runtime::get_loc(ctx.term, 0);
         atomic.store(position, Ordering::Relaxed);
 
         1
-    } else {
-        0
     }
 }
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__create_vbuf(ctx: ReduceContext) -> *mut Box<[AtomicU64]> {
+pub unsafe extern "C" fn hvm__create_vbuf(ctx: ReduceContext) -> *mut &'static [AtomicU64] {
     let ctx = get_context(ctx);
 
-    std::mem::transmute(Box::leak(Box::new(ctx.heap.vbuf.get_unchecked(ctx.tid))))
+    let vbuf = ctx.heap.vbuf.get_unchecked(ctx.tid);
+    Box::into_raw(Box::new(vbuf.as_slice()))
 }
 
 #[no_mangle]

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 pub mod apply;
-pub mod visit;
 pub mod graph;
+pub mod visit;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
@@ -52,7 +52,7 @@ impl Object {
             _ => panic!("Expected bool, got {:?}", self),
         }
     }
-    
+
     pub fn as_ptr<T: Sized>(&self) -> *mut T {
         match self {
             Object::Pointer(value) => unsafe {

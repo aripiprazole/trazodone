@@ -35,7 +35,9 @@ impl Eval for Instruction {
                     let vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
-                        .as_ptr::<Box<[AtomicU64]>>();
+                        .as_ptr::<&'static [AtomicU64]>()
+                        .as_ref()
+                        .unwrap();
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
 
                     hvm__update_host(context.reduce, vbuf, vlen);
@@ -46,7 +48,9 @@ impl Eval for Instruction {
                     let vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
-                        .as_ptr::<Box<[AtomicU64]>>();
+                        .as_ptr::<&'static [AtomicU64]>()
+                        .as_ref()
+                        .unwrap();
 
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
 
@@ -60,7 +64,9 @@ impl Eval for Instruction {
                     let vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
-                        .as_ptr::<Box<[AtomicU64]>>();
+                        .as_ptr::<&'static [AtomicU64]>()
+                        .as_ref()
+                        .unwrap();
 
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
                     let goup = variables.get("goup").expect("goup not found").as_u64();
@@ -81,7 +87,8 @@ impl Eval for Term {
                 Term::True => Object::Bool(true),
                 Term::False => Object::Bool(false),
                 Term::CreateVBuf => {
-                    Object::Pointer(std::mem::transmute(hvm__create_vbuf(context.reduce)))
+                    let vbuf = hvm__create_vbuf(context.reduce) as *const _ as *mut _;
+                    Object::Pointer(vbuf)
                 }
                 Term::Redex => {
                     let vlen = context
