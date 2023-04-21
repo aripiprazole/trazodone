@@ -5,7 +5,7 @@ use itertools::Itertools;
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
 use crate::ir::syntax;
-use crate::ir::syntax::Parameter;
+use crate::ir::syntax::{Parameter, Rule};
 
 pub type Insertion = Block;
 pub type FreeIndex = u64;
@@ -86,24 +86,7 @@ impl Codegen {
                 self.instructions.push(Instruction::Return(Term::True));
             } else {
                 let mut then: Codegen = self.new_block(Instruction::IncrementCost);
-                let constructor_parameters = rule
-                    .parameters
-                    .iter()
-                    .enumerate()
-                    .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
-                for (index, parameter) in constructor_parameters {
-                    let Parameter::Constructor(constructor) = parameter else {
-                        continue;
-                    };
-
-                    let argument = Term::reference(&format!("arg{}", index));
-
-                    for (sub, _) in constructor.flatten_patterns.iter().enumerate() {
-                        let term = Term::load_arg(argument.clone(), sub as u64);
-                        let inst = Instruction::binding(&format!("arg{}_{}", index, sub), term);
-                        then.instructions.push(inst);
-                    }
-                }
+                self.build_constructor_patterns(&rule, &mut then.instructions);
                 let done = then.build_term(rule.value.clone());
                 then.build_link(done);
                 then.build_collect(collect);
@@ -181,6 +164,27 @@ impl Codegen {
         // this should be turned off. I'll decide later.
 
         Term::alloc(size)
+    }
+
+    fn build_constructor_patterns(&mut self, rule: &Rule, then: &mut Block) {
+        let constructor_parameters = rule
+            .parameters
+            .iter()
+            .enumerate()
+            .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
+        for (index, parameter) in constructor_parameters {
+            let Parameter::Constructor(constructor) = parameter else {
+                continue;
+            };
+
+            let argument = Term::reference(&format!("arg{}", index));
+
+            for (sub, _) in constructor.flatten_patterns.iter().enumerate() {
+                let term = Term::load_arg(argument.clone(), sub as u64);
+                let inst = Instruction::binding(&format!("arg{}_{}", index, sub), term);
+                then.instructions.push(inst);
+            }
+        }
     }
 
     fn fresh_name(&mut self, name: &str) -> String {
