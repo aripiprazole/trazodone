@@ -60,7 +60,7 @@ impl Codegen {
     fn build_atom(&mut self, name: String, index: u64, field_index: Option<u64>) -> Term {
         match self.variables.get(index as usize) {
             Some((_, value)) => value.clone(),
-            // simple workaraound
+            // TODO: fix this simple workaround
             None => self
                 .variables
                 .iter()
