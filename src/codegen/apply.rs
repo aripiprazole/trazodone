@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
 use crate::ir::syntax;
@@ -25,6 +27,9 @@ pub struct Codegen {
     instructions: Block,
     lambdas: HashMap<u64, String>,
     global: Box<GlobalContext>,
+    // constant section
+    constant_extensions: HashMap<String, u64>,
+    constant_tags: HashMap<String, u64>,
 }
 
 impl Codegen {
@@ -35,6 +40,9 @@ impl Codegen {
             lambdas: HashMap::new(),
             variables: Vec::new(),
             instructions: Block::default(),
+            // constant sections
+            constant_tags: HashMap::new(),
+            constant_extensions: HashMap::new(),
         }
     }
 
@@ -109,7 +117,33 @@ impl Codegen {
 
         self.instructions.push(Instruction::Return(Term::False));
 
+        self.instructions.tags = self
+            .constant_tags
+            .iter()
+            .sorted_by_key(|(_, id)| **id)
+            .map(|(name, id)| (name.clone(), *id))
+            .collect();
+
+        self.instructions.extensions = self
+            .constant_extensions
+            .iter()
+            .sorted_by_key(|(_, id)| **id)
+            .map(|(name, id)| (name.clone(), *id))
+            .collect();
+
         Ok(self.instructions.clone())
+    }
+
+    pub fn tag(&mut self, tag: Tag) -> Term {
+        self.constant_tags.insert(tag.to_string(), tag.id());
+
+        Term::Tag(tag)
+    }
+
+    pub fn ext(&mut self, id: u64, name: &str) -> Term {
+        self.constant_extensions.insert(name.into(), id);
+
+        Term::ext(id, name)
     }
 
     pub fn build_link(&mut self, done: Term) {
@@ -162,6 +196,9 @@ impl Codegen {
             variables: self.variables.clone(),
             lambdas: self.lambdas.clone(),
             instructions: Block::with(instruction),
+            // constant clonning
+            constant_extensions: self.constant_extensions.clone(),
+            constant_tags: self.constant_tags.clone(),
         }
     }
 }

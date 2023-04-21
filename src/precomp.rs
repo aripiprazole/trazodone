@@ -58,12 +58,12 @@ pub fn compile_eval_precomp(
         name: name.leak(),
         funs: Some(PrecompFuns {
             apply: Arc::new(move |mut ctx| {
-                // println!("[debug] apply: {:?}", group.name.clone());
-                // println!("[debug]   ir =");
-                // println!("{:#?}", hvm_apply.clone());
+                println!("[debug] apply: {:?}", group.name.clone());
+                println!("[debug]   ir =");
+                println!("{:#?}", hvm_apply.clone());
                 let mut context = Context::new(&mut ctx as *const _ as *mut ReduceCtx);
                 let done = hvm_apply.clone().eval(&mut context);
-                // println!("[debug]   apply = {:?}", done);
+                println!("[debug]   apply = {:?}", done);
                 done.as_bool()
             }),
             visit: Arc::new(move |mut ctx| {

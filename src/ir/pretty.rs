@@ -47,12 +47,22 @@ pub trait Pretty {
 
 impl Debug for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        writeln!(f, "{{")?;
+        writeln!(f, "tags:")?;
+        for (name, id) in &self.tags {
+            writeln!(f, "  {name}: u64 = {id:#01x}")?;
+        }
+        writeln!(f)?;
+        writeln!(f, "extensions:")?;
+        for (name, id) in &self.extensions {
+            writeln!(f, "  {name}: u64 = {id:#01x} ; {id}")?;
+        }
+        writeln!(f)?;
+        writeln!(f, "entry:")?;
         for instruction in &self.instructions {
             instruction.pretty(2, f)?;
             writeln!(f)?;
         }
-        write!(f, "}}")
+        Ok(())
     }
 }
 
@@ -70,7 +80,7 @@ impl Pretty for F60 {
 
 impl Pretty for FunctionId {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
-        write!(f, "#{}@{}", self.0, self.1)
+        write!(f, "#{}%{}", self.0, self.1)
     }
 }
 
@@ -88,7 +98,7 @@ impl Pretty for Color {
 
 impl Pretty for Binary {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
-        write!(f, "({} {} {})", self.lhs.boxed(), self.op, self.rhs.boxed())
+        write!(f, "({} {} {})", self.op, self.lhs.boxed(), self.rhs.boxed())
     }
 }
 
@@ -111,7 +121,7 @@ impl Pretty for Position {
                 reference_name,
                 gate_index,
             } => {
-                write!(f, "[@{reference_name} {gate_index:?}]")
+                write!(f, "[%{reference_name} {gate_index:?}]")
             }
             Position::Host => write!(f, "[^host]"),
         }
@@ -124,18 +134,18 @@ impl Pretty for Term {
             Term::True => write!(f, "true"),
             Term::False => write!(f, "false"),
             Term::Current => write!(f, "^current-term"),
-            Term::Tag(tag) => write!(f, "TAG:{tag:?}"),
-            Term::Ext(id, tag) => write!(f, "EXT:{id:?}:{tag}"),
-            Term::Equal(lhs, rhs) => write!(f, "{} == {}", lhs.boxed(), rhs.boxed()),
-            Term::LogicalOr(lhs, rhs) => write!(f, "{} || {}", lhs.boxed(), rhs.boxed()),
-            Term::LogicalAnd(lhs, rhs) => write!(f, "{} && {}", lhs.boxed(), rhs.boxed()),
-            Term::Ref(name) => write!(f, "@{name}"),
-            Term::Create(value) => write!(f, "create {}", value.boxed()),
-            Term::ArityOf(ArityOf { term }) => write!(f, "arity-of {}", term.boxed()),
-            Term::GetNumber(GetNumber { term }) => write!(f, "get-number {}", term.boxed()),
-            Term::GetExt(GetExt { term }) => write!(f, "get-ext {}", term.boxed()),
-            Term::GetTag(GetTag { term }) => write!(f, "get-tag {}", term.boxed()),
-            Term::Alloc(Alloc { size }) => write!(f, "alloc(arity: {size})"),
+            Term::Tag(tag) => write!(f, "#{tag:?}"),
+            Term::Ext(_, tag) => write!(f, "${tag}"),
+            Term::Equal(lhs, rhs) => write!(f, "(== {} {})", lhs.boxed(), rhs.boxed()),
+            Term::LogicalOr(lhs, rhs) => write!(f, "(|| {} {})", lhs.boxed(), rhs.boxed()),
+            Term::LogicalAnd(lhs, rhs) => write!(f, "(&& {} {})", lhs.boxed(), rhs.boxed()),
+            Term::Ref(name) => write!(f, "%{name}"),
+            Term::Create(value) => write!(f, "(create {})", value.boxed()),
+            Term::ArityOf(ArityOf { term }) => write!(f, "(arity-of {})", term.boxed()),
+            Term::GetNumber(GetNumber { term }) => write!(f, "(get-number {})", term.boxed()),
+            Term::GetExt(GetExt { term }) => write!(f, "(get-ext {})", term.boxed()),
+            Term::GetTag(GetTag { term }) => write!(f, "(get-tag {})", term.boxed()),
+            Term::Alloc(Alloc { size }) => write!(f, "(alloc ~arity:{size})"),
             Term::GetPosition(GetPosition { term, position }) => {
                 write!(f, "(get-position {} {position})", term.boxed())
             }
@@ -143,19 +153,19 @@ impl Pretty for Term {
                 term,
                 argument_index,
             }) => {
-                write!(f, "load-argument ({}) {argument_index}", term.boxed())
+                write!(f, "(load-argument {} {argument_index})", term.boxed())
             }
             Term::TakeArgument(TakeArgument {
                 position,
                 argument_index,
             }) => write!(
                 f,
-                "take-argument {} {}",
+                "(take-argument {} {})",
                 position.boxed(),
                 argument_index.boxed()
             ),
             Term::NotFound(atom) => {
-                write!(f, "{{! not-found {atom:?} !}}")
+                write!(f, "(! not-found {atom:?} !)")
             }
         }
     }
@@ -164,33 +174,33 @@ impl Pretty for Term {
 impl Pretty for Value {
     fn pretty(&self, _indent: usize, f: &mut Formatter) -> Result {
         match self {
-            Value::Erased => write!(f, "erased!"),
-            Value::Lam(position) => write!(f, "(lam! {})", position.boxed()),
-            Value::App(position) => write!(f, "(app! {})", position.boxed()),
-            Value::U60(u60) => write!(f, "(u60! {})", u60.boxed()),
-            Value::F60(f60) => write!(f, "(f60! {})", f60.boxed()),
+            Value::Erased => write!(f, "Erased"),
+            Value::Lam(position) => write!(f, "(Lam {})", position.boxed()),
+            Value::App(position) => write!(f, "(App {})", position.boxed()),
+            Value::U60(u60) => write!(f, "(U60 {})", u60.boxed()),
+            Value::F60(f60) => write!(f, "(F60 {})", f60.boxed()),
             Value::Dp0(color, position) => {
-                write!(f, "(dp0! {} {})", color.boxed(), position.boxed())
+                write!(f, "(Dp0 {} {})", color.boxed(), position.boxed())
             }
             Value::Dp1(color, position) => {
-                write!(f, "(dp1! {} {})", color.boxed(), position.boxed())
+                write!(f, "(Dp1 {} {})", color.boxed(), position.boxed())
             }
             Value::Argument(position) => {
-                write!(f, "(argument! {})", position.boxed())
+                write!(f, "(Argument {})", position.boxed())
             }
             Value::Atom(position) => {
-                write!(f, "(atom! {})", position.boxed())
+                write!(f, "(Atom {})", position.boxed())
             }
             Value::Super(color, position) => {
-                write!(f, "(super! {} {})", color.boxed(), position.boxed())
+                write!(f, "(Super {} {})", color.boxed(), position.boxed())
             }
             Value::Binary(binary, position) => {
-                write!(f, "(binary! {} {})", binary.boxed(), position.boxed())
+                write!(f, "(Binary {} {})", binary.boxed(), position.boxed())
             }
             Value::Function(function_id, position) => {
                 write!(
                     f,
-                    "(function! {} {})",
+                    "(Function {} {})",
                     function_id.boxed(),
                     position.boxed()
                 )
@@ -198,7 +208,7 @@ impl Pretty for Value {
             Value::Constructor(function_id, position) => {
                 write!(
                     f,
-                    "(constructor! {} {})",
+                    "(Constructor {} {})",
                     function_id.boxed(),
                     position.boxed()
                 )
@@ -210,23 +220,23 @@ impl Pretty for Value {
 impl Pretty for Instruction {
     fn pretty(&self, indent: usize, f: &mut Formatter) -> Result {
         match self {
-            Instruction::Term(term) => write!(f, "{:>indent$}{};", "", term.boxed()),
-            Instruction::IncrementCost => write!(f, "{:>indent$}increment-cost;", ""),
+            Instruction::Term(term) => write!(f, "{:>indent$}{}", "", term.boxed()),
+            Instruction::IncrementCost => write!(f, "{:>indent$}increment-cost", ""),
             Instruction::Collect(Collect { term }) => {
-                write!(f, "{:>indent$}collect {};", "", term.boxed())
+                write!(f, "{:>indent$}collect {}", "", term.boxed())
             }
             Instruction::Free(Free { position, arity }) => {
-                write!(f, "{:>indent$}free {} {arity};", "", position.boxed())
+                write!(f, "{:>indent$}free {} {arity}", "", position.boxed())
             }
             Instruction::Let(Let { name, value }) => {
-                write!(f, "{:>indent$}let {name} = {};", "", value.boxed())
+                write!(f, "{:>indent$}%{name} = {}", "", value.boxed())
             }
             Instruction::Return(term) => {
-                write!(f, "{:>indent$}return {};", "", term.boxed())
+                write!(f, "{:>indent$}ret {}", "", term.boxed())
             }
             Instruction::Link(Link { position, term }) => write!(
                 f,
-                "{:>indent$}link {} ({});",
+                "{:>indent$}link {} {}",
                 "",
                 position.boxed(),
                 term.boxed()
@@ -236,24 +246,23 @@ impl Pretty for Instruction {
                 then,
                 otherwise,
             }) => {
-                writeln!(f, "{:>indent$}if {} {{", "", condition.boxed())?;
+                writeln!(f, "{:>indent$}if {}:", "", condition.boxed())?;
                 for instruction in &then.instructions {
                     instruction.pretty(indent + 2, f)?;
                     writeln!(f)?;
                 }
-                write!(f, "{:>indent$}}}", "")?;
+                write!(f, "{:>indent$}", "")?;
                 if let Some(otherwise) = otherwise {
-                    writeln!(f, " else {{")?;
+                    writeln!(f, "else:")?;
                     for instruction in &otherwise.instructions {
                         instruction.pretty(indent + 2, f)?;
                         writeln!(f)?;
                     }
-                    write!(f, "{:>indent$}}}", "")?;
                 }
                 Ok(())
             }
             Instruction::Println(message) => {
-                write!(f, "{:>indent$}println!({:?});", "", message)
+                write!(f, "{:>indent$}println {:?}", "", message)
             }
         }
     }

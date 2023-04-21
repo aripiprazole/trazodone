@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
 use hvm::syntax::Oper;
@@ -6,6 +7,8 @@ use crate::ir::syntax;
 
 #[derive(Default, Clone)]
 pub struct Block {
+    pub tags: Vec<(String, u64)>,
+    pub extensions: Vec<(String, u64)>,
     pub instructions: Vec<Instruction>,
 }
 
@@ -228,7 +231,6 @@ pub struct Variable {
     pub index: u64,
     pub field_index: Option<u64>,
 }
-
 
 impl Term {
     pub fn is_true(&self) -> bool {
@@ -460,15 +462,91 @@ impl Deref for Block {
 impl Block {
     pub fn with(instruction: Instruction) -> Self {
         Self {
+            extensions: vec![],
+            tags: vec![],
             instructions: vec![instruction],
         }
     }
 
     pub fn new(instructions: Vec<Instruction>) -> Self {
-        Self { instructions }
+        Self {
+            extensions: vec![],
+            tags: vec![],
+            instructions
+        }
     }
 
     pub fn push(&mut self, instruction: Instruction) {
         self.instructions.push(instruction);
+    }
+}
+
+impl Tag {
+    pub const fn id(&self) -> u64 {
+        match self {
+            Tag::DUP0 => 0x0,
+            Tag::DUP1 => 0x1,
+            Tag::ATOM => 0x2,
+            Tag::ARGUMENT => 0x3,
+            Tag::ERASED => 0x4,
+            Tag::LAM => 0x5,
+            Tag::APP => 0x6,
+            Tag::SUPER => 0x7,
+            Tag::CONSTRUCTOR => 0x8,
+            Tag::FUNCTION => 0x9,
+            Tag::BINARY => 0xa,
+            Tag::U60 => 0xb,
+            Tag::F60 => 0xc,
+            Tag::NIL => 0xf,
+        }
+    }
+}
+
+impl Display for Tag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Tag::DUP0 => {
+                write!(f, "DUP0")
+            }
+            Tag::DUP1 => {
+                write!(f, "DUP1")
+            }
+            Tag::ATOM => {
+                write!(f, "ATOM")
+            }
+            Tag::ARGUMENT => {
+                write!(f, "ARGUMENT")
+            }
+            Tag::ERASED => {
+                write!(f, "ERASED")
+            }
+            Tag::LAM => {
+                write!(f, "LAM")
+            }
+            Tag::APP => {
+                write!(f, "APP")
+            }
+            Tag::SUPER => {
+                write!(f, "SUPER")
+            }
+            Tag::CONSTRUCTOR => {
+                write!(f, "CONSTRUCTOR")
+            }
+            Tag::FUNCTION => {
+                write!(f, "FUNCTION")
+            }
+            Tag::BINARY => {
+                write!(f, "BINARY")
+            }
+            Tag::U60 => {
+                write!(f, "U60")
+            }
+            Tag::F60 => {
+                write!(f, "F60")
+            }
+            Tag::NIL => {
+                write!(f, "NIL")
+            }
+        }
     }
 }
