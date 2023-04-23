@@ -13,6 +13,7 @@ pub type FreeArity = u64;
 pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
 
 pub mod binary;
+pub mod block;
 pub mod call;
 pub mod collect;
 pub mod deconstruct;
@@ -20,7 +21,6 @@ pub mod free;
 pub mod metadata;
 pub mod term;
 pub mod variable;
-pub mod block;
 
 pub type Result<T> = std::result::Result<T, String>;
 

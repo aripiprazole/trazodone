@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use hvm::{Precomp, PRECOMP, PrecompFuns, ReduceCtx};
 use hvm::rulebook::RuleBook;
+use hvm::{Precomp, PrecompFuns, ReduceCtx, PRECOMP};
 use itertools::Itertools;
 
 use crate::eval::{Context, Control, Eval};

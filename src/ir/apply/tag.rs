@@ -34,7 +34,7 @@ impl Tag {
             Tag::BINARY => 2,
             Tag::U60 => 1,
             Tag::F60 => 1,
-            Tag::NIL => 0
+            Tag::NIL => 0,
         }
     }
 

@@ -73,7 +73,7 @@ pub fn run_cli() {
 
     match cli.command {
         Command::Repl => repl::start_repl(),
-        Command::Eval(args) => eval::run_eval(args)
+        Command::Eval(args) => eval::run_eval(args),
     }
 }
 

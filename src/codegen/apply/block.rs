@@ -1,7 +1,7 @@
-use itertools::Itertools;
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::{Block, Instruction, Term};
 use crate::ir::syntax;
+use itertools::Itertools;
 
 impl Codegen {
     pub fn build_apply(&mut self, group: &syntax::RuleGroup) -> super::Result<Block> {

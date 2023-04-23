@@ -1,5 +1,5 @@
+use crate::ir::apply::{Binary, Color, FunctionId, Position, Tag, Value, F60, U60};
 use hvm::syntax::Oper;
-use crate::ir::apply::{Binary, Color, FunctionId, Position, Tag, Value, U60, F60};
 
 #[derive(Debug, Clone)]
 pub struct LoadArgument {

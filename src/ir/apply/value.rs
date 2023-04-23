@@ -1,5 +1,5 @@
-use hvm::syntax::Oper;
 use crate::ir::apply::{FunctionId, Position, Term};
+use hvm::syntax::Oper;
 
 #[derive(Debug, Clone)]
 pub struct Color(pub u64);

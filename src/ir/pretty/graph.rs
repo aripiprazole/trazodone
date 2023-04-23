@@ -2,7 +2,11 @@ use std::fmt::{Display, Formatter};
 
 use crate::ir::graph::{BasicBlock, HasTerm, Terminator};
 
-impl<I: HasTerm> Display for BasicBlock<I> where I: Display, I::Term: Display {
+impl<I: HasTerm> Display for BasicBlock<I>
+where
+    I: Display,
+    I::Term: Display,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for declared_block in self.declared_blocks.iter() {
             writeln!(f, "{declared_block}")?;
