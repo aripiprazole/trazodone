@@ -10,7 +10,7 @@ pub mod codegen;
 pub mod eval;
 pub mod ir;
 pub mod llvm;
-pub mod precomp;
+pub mod hvm;
 pub mod runtime;
 
 /// The `trazodone` command entrypoint.

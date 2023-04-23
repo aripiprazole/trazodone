@@ -70,7 +70,7 @@ fn setup_eval_environment(code: &str) {
     let global = setup_global_context(&book);
     let groups = ir_codegen_book(&book, global);
 
-    crate::precomp::setup_precomp(book, groups);
+    crate::hvm::setup_precomp(book, groups);
 }
 
 fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {

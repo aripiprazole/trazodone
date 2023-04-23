@@ -26,7 +26,7 @@ where
                 panic!("Unreachable");
             }
             Terminator::Debug(message) => {
-                println!("{}", message);
+                println!("{message}");
                 Control::Break(Object::Bool(false))
             }
             Terminator::Return(value) => Control::Break(value.eval(context)),

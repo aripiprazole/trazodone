@@ -77,9 +77,9 @@ impl Default for GlobalContext {
             /// The name_index is used to generate unique names for the
             /// constructors.
             ///
-            /// The current name index: 29, is defined by the precomp.rs file. Defined
+            /// The current name index: 29, is defined by the hvm file. Defined
             /// on the HVM github repository.
-            name_index: 29, // precomp.rs
+            name_index: 29, // hvm
             constructors: HashMap::new(),
         }
     }
