@@ -2,10 +2,16 @@ use hvm::syntax::Oper;
 
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::{Instruction, Position, Term};
-use crate::ir::syntax;
+use crate::ir::syntax::Binary as IRBinary;
 
 impl Codegen {
-    pub fn build_binary(&mut self, lhs: syntax::Term, oper: Oper, rhs: syntax::Term) -> Term {
+    pub fn build_binary(&mut self, expr: IRBinary) -> Term {
+        let IRBinary {
+            op,
+            box lhs,
+            box rhs,
+        } = expr;
+
         let binary = self.fresh_name("binary");
 
         let lhs = self.build_term(lhs);
@@ -18,7 +24,7 @@ impl Codegen {
         self.instr(Instruction::link(Position::initial(&binary), lhs.clone()));
         self.instr(Instruction::link(Position::new(&binary, 1), rhs.clone()));
 
-        Term::create_binary(lhs, oper, rhs, Position::initial(&binary))
+        Term::create_binary(lhs, op, rhs, Position::initial(&binary))
     }
 }
 

@@ -9,7 +9,7 @@ use crate::ir::syntax;
 pub struct Block {
     pub tags: Vec<(String, u64)>,
     pub extensions: Vec<(String, u64)>,
-    pub instructions: Vec<Instruction>,
+    pub block: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone)]
@@ -84,8 +84,10 @@ pub struct If {
 }
 
 #[derive(Debug, Clone)]
-pub struct WHNF {
-    pub strictness_index: u64,
+pub struct Metadata {
+    pub term: crate::ir::syntax::Term,
+    pub comments: Vec<String>,
+    pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone)]
@@ -94,6 +96,7 @@ pub enum Instruction {
     Let(Let),
     Link(Link),
     Collect(Collect),
+    Metadata(Metadata),
     Free(Free),
     Term(Term),
     Return(Term),
@@ -379,7 +382,7 @@ impl Term {
         Term::Create(Value::Constructor(function_id, position))
     }
 
-    pub fn create_erased() -> Self {
+    pub fn erased() -> Self {
         Term::Create(Value::Erased)
     }
 }
@@ -461,7 +464,7 @@ impl Deref for Block {
     type Target = Vec<Instruction>;
 
     fn deref(&self) -> &Self::Target {
-        &self.instructions
+        &self.block
     }
 }
 
@@ -470,7 +473,7 @@ impl Block {
         Self {
             extensions: vec![],
             tags: vec![],
-            instructions: vec![instruction],
+            block: vec![instruction],
         }
     }
 
@@ -478,12 +481,12 @@ impl Block {
         Self {
             extensions: vec![],
             tags: vec![],
-            instructions,
+            block: instructions,
         }
     }
 
     pub fn push(&mut self, instruction: Instruction) {
-        self.instructions.push(instruction);
+        self.block.push(instruction);
     }
 }
 

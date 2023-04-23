@@ -1,61 +1,81 @@
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::*;
 use crate::ir::syntax;
+use crate::ir::syntax::{Atom as IRAtom, Lam as IRLam, Let as IRLet, Term as IRTerm};
 
 impl Codegen {
-    pub fn build_term(&mut self, term: syntax::Term) -> Term {
-        use crate::ir::syntax::Term::*;
+    pub fn build_term(&mut self, term: IRTerm) -> Term {
+        use IRTerm::*;
 
-        match term {
+        let bb = self;
+
+        match term.clone() {
             U60(u60) => Term::create_u60(u60),
             F60(f60) => Term::create_f60(f60),
-            Let(let_expr) => self.build_let(let_expr.name, *let_expr.value, *let_expr.body),
-            Lam(lam_expr) => self.build_lam(
-                lam_expr.parameter,
-                lam_expr.global_id,
-                lam_expr.erased,
-                *lam_expr.value,
-            ),
-            Binary(binary_expr) => {
-                self.build_binary(*binary_expr.lhs, binary_expr.op, *binary_expr.rhs)
-            }
-            Atom(atom_expr) => {
-                self.build_atom(atom_expr.name, atom_expr.index, atom_expr.field_index)
-            }
-            App(app) => match app.global_name {
-                Some(global_name) if app.is_function => self.build_call(app.arguments, global_name),
-                Some(global_name) => self.build_constructor(app.arguments, global_name),
-                None => self.build_app(*app.callee, app.arguments),
-            },
+            Atom(atom_expr) => bb.build_atom(atom_expr),
+            Let(let_expr) => bb.build_let(let_expr),
+            Lam(lam_expr) => bb.with_metadata(term, |bb, _| {
+                bb.build_lam(lam_expr)
+            }),
+            Binary(binary_expr) => bb.with_metadata(term, |bb, _| {
+                bb.build_binary(binary_expr)
+            }),
+            App(app) => bb.with_metadata(term, |bb, _| {
+                match app.global_name {
+                    Some(global_name) if app.is_function => bb.build_call(app.arguments, global_name),
+                    Some(global_name) => bb.build_constructor(app.arguments, global_name),
+                    None => bb.build_app(*app.callee, app.arguments),
+                }
+            }),
             Duplicate(_) => todo!(),
             Super(_) => todo!(),
         }
     }
 
-    fn build_lam(
-        &mut self,
-        parameter: String,
-        global_id: u64,
-        erased: bool,
-        value: syntax::Term,
-    ) -> Term {
+    fn build_lam(&mut self, expr: IRLam) -> Term {
+        let IRLam {
+            box value,
+            parameter,
+            erased,
+            global_id,
+        } = expr;
+
         let name = self.alloc_lam(global_id);
-        self.variables
-            .push((parameter, Term::create_atom(Position::initial(&name))));
+        let atom = Term::create_atom(Position::initial(&name));
+
+        self.variables.push((parameter, atom)); // Push to the variable stack
         let value = self.build_term(value);
         self.variables.pop();
+
         if erased {
-            self.instr(Instruction::link(
-                Position::initial(&name),
-                Term::create_erased(),
-            ));
+            self.instr(Instruction::link(Position::initial(&name), Term::erased()));
         }
         self.instr(Instruction::link(Position::new(&name, 1), value));
 
         Term::create_lam(Position::initial(&name))
     }
 
-    fn build_atom(&mut self, name: String, index: u64, field_index: Option<u64>) -> Term {
+    fn build_let(&mut self, expr: IRLet) -> Term {
+        let IRLet {
+            name,
+            box value,
+            box body,
+        } = expr;
+
+        let binding = self.build_term(value);
+        self.variables.push((name, binding));
+        let body = self.build_term(body);
+        self.variables.pop();
+
+        body
+    }
+
+    fn build_atom(&mut self, expr: IRAtom) -> Term {
+        let IRAtom {
+            name,
+            index,
+            field_index,
+        } = expr;
         match self.variables.get(index as usize) {
             Some((_, value)) => value.clone(),
             // TODO: fix this simple workaround
@@ -72,14 +92,5 @@ impl Codegen {
                     })
                 }),
         }
-    }
-
-    fn build_let(&mut self, name: String, value: syntax::Term, body: syntax::Term) -> Term {
-        let value = self.build_term(value);
-        self.variables.push((name, value));
-        let body = self.build_term(body);
-        self.variables.pop();
-
-        body
     }
 }

@@ -165,14 +165,14 @@ impl Eval for Instruction {
                     let condition = condition.eval(context).as_bool();
                     if condition {
                         let mut then_context = context.clone();
-                        for instruction in then.instructions {
+                        for instruction in then.block {
                             if let Control::Break(value) = instruction.eval(&mut then_context) {
                                 return Control::Break(value);
                             }
                         }
                     } else if let Some(otherwise) = otherwise {
                         let mut otherwise_context = context.clone();
-                        for instruction in otherwise.instructions {
+                        for instruction in otherwise.block {
                             if let Control::Break(value) = instruction.eval(&mut otherwise_context)
                             {
                                 return Control::Break(value);
@@ -207,6 +207,13 @@ impl Eval for Instruction {
                 Instruction::Println(message) => {
                     println!("{}", message);
                 }
+                Instruction::Metadata(metadata) => {
+                    for instruction in metadata.instructions {
+                        if let Control::Break(value) = instruction.eval(context) {
+                            return Control::Break(value);
+                        }
+                    }
+                }
             }
         }
 
@@ -218,7 +225,7 @@ impl Eval for Block {
     type Output = Object;
 
     fn eval(self, context: &mut Context) -> Self::Output {
-        for instruction in self.instructions {
+        for instruction in self.block {
             if let Control::Break(value) = instruction.eval(context) {
                 return value;
             }

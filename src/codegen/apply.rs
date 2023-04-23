@@ -19,6 +19,7 @@ pub mod deconstruct;
 pub mod free;
 pub mod term;
 pub mod variable;
+pub mod metadata;
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -149,7 +150,7 @@ impl Codegen {
             //        this line.
             self.instr(Instruction::link(
                 Position::initial(&name),
-                Term::create_erased(),
+                Term::erased(),
             ));
             self.lambdas.insert(global_id, name.clone());
         }
@@ -192,7 +193,7 @@ impl Codegen {
             for (sub, _) in constructor.flatten_patterns.iter().enumerate() {
                 let term = Term::load_arg(argument.clone(), sub as u64);
                 let inst = Instruction::binding(&format!("arg{}_{}", index, sub), term);
-                then.instructions.push(inst);
+                then.block.push(inst);
             }
         }
     }
