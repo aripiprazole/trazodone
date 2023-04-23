@@ -111,14 +111,14 @@ impl Display for Binary {
     }
 }
 
-impl Display for PositionBinary {
+impl Display for Op {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            PositionBinary::Con(v) => write!(f, "{v}"),
-            PositionBinary::Sum(a, b) => write!(f, "(+ {a} {b})"),
-            PositionBinary::Sub(a, b) => write!(f, "(- {a} {b})"),
-            PositionBinary::Mul(a, b) => write!(f, "(* {a} {b})"),
-            PositionBinary::Div(a, b) => write!(f, "(/ {a} {b})"),
+            Op::Constant(v) => write!(f, "{v}"),
+            Op::Sum(a, b) => write!(f, "(+ {a} {b})"),
+            Op::Sub(a, b) => write!(f, "(- {a} {b})"),
+            Op::Mul(a, b) => write!(f, "(* {a} {b})"),
+            Op::Div(a, b) => write!(f, "(/ {a} {b})"),
         }
     }
 }
@@ -128,7 +128,7 @@ impl Display for Position {
         match self {
             Position::Named {
                 reference_name,
-                gate_index: PositionBinary::Con(0),
+                gate_index: Op::Constant(0),
             } => {
                 write!(f, "%{reference_name}")
             }

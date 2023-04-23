@@ -3,6 +3,11 @@ use crate::ir::apply::{Block, Instruction, Metadata, Term};
 use crate::ir::syntax::Term as IRTerm;
 
 impl Codegen {
+    /// Generates an [Instruction::Metadata] instruction, with
+    /// the given [IRTerm] and the given builder function [F].
+    ///
+    /// The builder function [F] receives a new [Codegen] instance without
+    /// any [Instruction]s, and the given [IRTerm].
     pub fn with_metadata<F>(&mut self, current: IRTerm, f: F) -> Term
     where
         F: FnOnce(&mut Codegen, IRTerm) -> Term,

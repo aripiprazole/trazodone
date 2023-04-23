@@ -1,3 +1,5 @@
+/// Represents the builtin HVM binary operations
+/// that can be applied to terms.
 #[derive(Debug, Clone)]
 pub enum Operation {
     Add,

@@ -13,6 +13,11 @@ pub mod llvm;
 pub mod precomp;
 pub mod runtime;
 
+/// The `trazodone` command entrypoint.
+///
+/// This project has two main subcommands:
+///   - repl
+///   - eval
 fn main() {
     cli::run_cli();
 }

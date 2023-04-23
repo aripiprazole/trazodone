@@ -1,25 +1,29 @@
 use std::fmt::Display;
 
+use crate::ir::apply::{Arity, NameId};
+
+/// Represents the builtin HVM value's tags.
 #[derive(Debug, Clone)]
 pub enum Tag {
-    DUP0,
-    DUP1,
-    ATOM,
-    ARGUMENT,
-    ERASED,
-    LAM,
-    APP,
-    SUPER,
-    CONSTRUCTOR,
-    FUNCTION,
-    BINARY,
-    U60,
-    F60,
-    NIL,
+    DUP0,        // Dp0
+    DUP1,        // Dp1
+    ATOM,        // Var
+    ARGUMENT,    // Arg
+    ERASED,      // Era
+    LAM,         // Lam
+    APP,         // App
+    SUPER,       // Sup
+    CONSTRUCTOR, // Ctr
+    FUNCTION,    // Fun
+    BINARY,      // Op2
+    U60,         // U60
+    F60,         // F60
+    NIL,         // Nil
 }
 
 impl Tag {
-    pub const fn size(&self) -> u64 {
+    /// Returns the size of the tag in HVM arity.
+    pub const fn size(&self) -> Arity {
         match self {
             Tag::DUP0 => 1,
             Tag::DUP1 => 1,
@@ -38,7 +42,8 @@ impl Tag {
         }
     }
 
-    pub const fn id(&self) -> u64 {
+    /// Returns the id of the tag.
+    pub const fn id(&self) -> NameId {
         match self {
             Tag::DUP0 => 0x0,
             Tag::DUP1 => 0x1,

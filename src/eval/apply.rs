@@ -2,7 +2,7 @@ use crate::codegen::apply::binary::build_binary_op;
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::apply::{
     Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction,
-    Let, Link, LoadArgument, Position, PositionBinary, Tag, Term, Value, U60,
+    Let, Link, LoadArgument, Position, Op, Tag, Term, Value, U60,
 };
 use crate::runtime::{
     hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,
@@ -35,16 +35,16 @@ impl Eval for Position {
     }
 }
 
-impl Eval for PositionBinary {
+impl Eval for Op {
     type Output = u64;
 
     fn eval(self, context: &mut Context) -> Self::Output {
         match self {
-            PositionBinary::Con(value) => value,
-            PositionBinary::Sum(a, b) => a.eval(context) + b.eval(context),
-            PositionBinary::Sub(a, b) => a.eval(context) + b.eval(context),
-            PositionBinary::Mul(a, b) => a.eval(context) + b.eval(context),
-            PositionBinary::Div(a, b) => a.eval(context) + b.eval(context),
+            Op::Constant(value) => value,
+            Op::Sum(a, b) => a.eval(context) + b.eval(context),
+            Op::Sub(a, b) => a.eval(context) + b.eval(context),
+            Op::Mul(a, b) => a.eval(context) + b.eval(context),
+            Op::Div(a, b) => a.eval(context) + b.eval(context),
         }
     }
 }

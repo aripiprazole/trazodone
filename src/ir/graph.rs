@@ -4,9 +4,16 @@ pub trait HasTerm: Debug + Clone {
     type Term: Debug + Clone;
 }
 
+/// Represents a label, used to identify a basic block.
 #[derive(Default, Clone)]
 pub struct Label(pub String);
 
+/// Represents a variable access in a basic block.
+/// * declared_block is the label of the basic block where the variable is declared.
+///
+/// It's used to compile a function, if the basic_block is too large, it's split into
+/// smaller basic blocks. The variable access is then resolved by looking at the
+/// declared_block label.
 #[derive(Default, Debug, Clone)]
 pub struct Variable {
     pub declared_block: Label,
@@ -22,12 +29,21 @@ pub enum Terminator<I: HasTerm> {
     Cond(I::Term, Label, Label),
 }
 
+/// Represents a basic block, composed by a label, a list of variables, a list of instructions
 #[derive(Debug, Clone)]
 pub struct BasicBlock<I: HasTerm> {
+    /// The basic block's name, usually represented by [Label].
     pub label: String,
+
     pub variables: Vec<Variable>,
     pub instructions: Vec<I>,
     pub terminator: Terminator<I>,
+
+    /// The declared blocks, are the current tree of blocks that are declared with
+    /// the terminators [Terminator::Jump] and [Terminator::Cond].
+    ///
+    /// These are used to evaluate the [BasicBlock] and to compile the
+    /// [BasicBlock] into a LLVM IR.
     pub(crate) declared_blocks: Vec<BasicBlock<I>>,
 }
 

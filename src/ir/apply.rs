@@ -1,6 +1,8 @@
 use std::ops::Deref;
 
+pub use arity::*;
 pub use function_id::*;
+pub use id::*;
 pub use instruction::*;
 pub use op::*;
 pub use position::*;
@@ -8,7 +10,9 @@ pub use tag::*;
 pub use term::*;
 pub use value::*;
 
+pub mod arity;
 pub mod function_id;
+pub mod id;
 pub mod instruction;
 pub mod op;
 pub mod position;
