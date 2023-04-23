@@ -8,6 +8,31 @@ use crate::ir::rule::RuleGroup;
 use crate::llvm::cstr::cstr;
 
 /// FIXME: its throwing segfault or invalid free.
+///
+/// Bridge is a struct that contains the llvm module, context and builder.
+///
+/// It does bridge between rust and llvm. It creates a function that can be
+/// called from llvm, and it can call a rust function, with the reference
+/// to the rule group and the reduce context, passing the `group` as a
+/// constant pointer, and the `ctx` as a function argument.
+///
+/// E.g:
+/// ```rust
+/// fn eval_fn(group: *mut RuleGroup, ctx: *mut ReduceCtx) -> bool {
+///   // ... magic
+/// }
+/// ```
+///
+/// The `eval_fn` is a rust function, that can be called from llvm, and it
+/// has the signature:
+///
+/// ```rust
+/// type Fn = fn(*mut ReduceCtx) -> bool;
+/// ```
+///
+/// Since, the `group` is a constant pointer, it can be passed as a constant
+/// and dereferenced as hardcode, but the `ctx` is a function argument, so
+/// this is passed as a function argument.
 pub struct Bridge {
     pub module: LLVMModuleRef,
     pub context: LLVMContextRef,
