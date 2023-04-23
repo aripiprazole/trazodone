@@ -87,7 +87,9 @@ pub fn create_precomp(id: u64, smap: StrictMap, group: RuleGroup) -> Precomp {
                 apply: Arc::new(move |mut ctx| {
                     // apply_fn(&mut ctx as *const _ as *mut _)
                     let mut context = Context::new(&mut ctx as *const _ as *mut ReduceCtx);
-                    let done = hvm_apply.clone().eval(&mut context);
+                    let Control::Break(done) = hvm_apply.clone().into_control_flow_graph().eval(&mut context) else {
+                        panic!("the program did not finished correctly.")
+                    };
                     done.as_bool()
                 }),
                 visit: Arc::new(move |mut ctx| {

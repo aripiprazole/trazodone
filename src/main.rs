@@ -8,9 +8,9 @@ extern crate core;
 pub mod cli;
 pub mod codegen;
 pub mod eval;
+pub mod hvm;
 pub mod ir;
 pub mod llvm;
-pub mod hvm;
 pub mod runtime;
 
 /// The `trazodone` command entrypoint.

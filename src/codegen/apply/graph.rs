@@ -10,11 +10,7 @@ impl Block {
         // to avoid name collisions.
         let id = rand::thread_rng().gen::<u16>();
         let mut bb = BasicBlock::new(&format!("bb_{id}"));
-        let instructions = self
-            .block
-            .iter()
-            .cloned()
-            .flat_map(flatten_instruction);
+        let instructions = self.block.iter().cloned().flat_map(flatten_instruction);
 
         for (id, instruction) in instructions.clone().enumerate() {
             match instruction {

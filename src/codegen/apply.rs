@@ -15,10 +15,10 @@ pub mod call;
 pub mod collect;
 pub mod deconstruct;
 pub mod free;
+pub mod graph;
 pub mod metadata;
 pub mod term;
 pub mod variable;
-pub mod graph;
 
 pub type Result<T> = std::result::Result<T, String>;
 

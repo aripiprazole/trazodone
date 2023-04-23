@@ -1,5 +1,8 @@
 use crate::eval::{Context, Control, Eval, Object};
-use crate::ir::apply::{Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let, Link, LoadArgument, Op, Position, Tag, Term, Value, U60, build_binary_op};
+use crate::ir::apply::{
+    build_binary_op, Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag,
+    If, Instruction, Let, Link, LoadArgument, Op, Position, Tag, Term, Value, U60,
+};
 use crate::runtime::{
     hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,
     hvm__create_function, hvm__create_lam, hvm__create_u60, hvm__create_var, hvm__free,
