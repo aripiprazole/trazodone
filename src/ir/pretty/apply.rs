@@ -99,12 +99,6 @@ impl Display for FunctionId {
     }
 }
 
-impl Display for IntValue {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter) -> Result {
         write!(f, "&color {}", self.0)
