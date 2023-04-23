@@ -175,7 +175,7 @@ impl Codegen {
 
         Term::Agent(Agent {
             arity: arguments.len() as u64,
-            arguments: self.extract_argument_references(arguments),
+            arguments,
         })
     }
 
@@ -214,7 +214,7 @@ impl Codegen {
         }
     }
 
-    fn fresh_name(&mut self, name: &str) -> String {
+    fn fresh_name(&mut self, _name: &str) -> String {
         let name = format!("{}", self.name_index);
         self.name_index += 1;
         name
@@ -231,19 +231,5 @@ impl Codegen {
             constant_extensions: self.constant_extensions.clone(),
             constant_tags: self.constant_tags.clone(),
         }
-    }
-    fn extract_argument_references(&mut self, arguments: Vec<Term>) -> Vec<Term> {
-        arguments
-            .iter()
-            .cloned()
-            // .map(|term| match term {
-            //     term @ Term::Ref(..) => term,
-            //     term => {
-            //         let name = self.fresh_name("arg");
-            //         self.instr(Instruction::binding(&name, term));
-            //         Term::reference(&name)
-            //     }
-            // })
-            .collect()
     }
 }

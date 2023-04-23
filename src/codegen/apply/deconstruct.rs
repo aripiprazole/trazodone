@@ -1,5 +1,4 @@
 use crate::codegen::apply::Codegen;
-use crate::codegen::build_name;
 use crate::ir::apply::{Tag, Term};
 use crate::ir::syntax;
 use crate::ir::syntax::*;

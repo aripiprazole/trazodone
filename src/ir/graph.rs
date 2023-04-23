@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub trait HasTerm: Debug + Clone {
@@ -29,7 +28,6 @@ pub struct BasicBlock<I: HasTerm> {
     pub variables: Vec<Variable>,
     pub instructions: Vec<I>,
     pub terminator: Terminator<I>,
-    pub(crate) constants: HashMap<String, u64>,
     pub(crate) declared_blocks: Vec<BasicBlock<I>>,
 }
 
@@ -61,7 +59,6 @@ impl<I: HasTerm> Default for BasicBlock<I> {
             instructions: Vec::new(),
             terminator: Terminator::Unreachable,
             // internal stuff
-            constants: HashMap::new(),
             declared_blocks: Vec::new(),
         }
     }
