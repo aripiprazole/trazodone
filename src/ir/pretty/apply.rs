@@ -94,7 +94,7 @@ impl Display for F60 {
 
 impl Display for FunctionId {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "'{}", self.1)
+        write!(f, "{}", self.0.clone().unwrap_or("<<unknown>>".into()))
     }
 }
 
@@ -135,13 +135,13 @@ impl Display for Position {
                 reference_name,
                 gate_index: PositionBinary::Con(0),
             } => {
-                write!(f, "[%{reference_name}]")
+                write!(f, "%{reference_name}")
             }
             Position::Named {
                 reference_name,
                 gate_index,
             } => {
-                write!(f, "[%{reference_name} {gate_index}]")
+                write!(f, "%{reference_name}/{gate_index}")
             }
             Position::Host => write!(f, "[^host]"),
         }
