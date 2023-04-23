@@ -13,4 +13,5 @@ itertools = "0.10"
 clap = { version = "4.2.4", features = ["derive"] }
 colored = "2.0.0"
 rand = "0.8.5"
+inkwell = { version = "0.1.1", features = ["llvm15-0"] }
 
