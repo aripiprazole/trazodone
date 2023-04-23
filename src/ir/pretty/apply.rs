@@ -293,8 +293,6 @@ impl Pretty for Instruction {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
         // let instructions = Block::new(vec![

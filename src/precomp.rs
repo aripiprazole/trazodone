@@ -8,6 +8,8 @@ use itertools::Itertools;
 use crate::eval::{Context, Control, Eval};
 use crate::ir::rule::RuleGroup;
 
+type StrictMap = &'static [bool];
+
 pub fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
     let mut precomp = PRECOMP
         .clone()
@@ -18,18 +20,22 @@ pub fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
     for (id, name) in itertools::sorted(book.id_to_name.iter()) {
         let smap = book.id_to_smap.get(id).unwrap().clone().leak();
         if *id <= 29 {
-            // skip built-in constructors
+            // Skip built-in constructors
             continue;
         }
 
-        match groups.get(name) {
-            Some(group) => {
-                compile_eval_precomp(&mut precomp, *id, smap, group.clone());
-            }
-            None => {
-                compile_precomp(&mut precomp, *id, name.clone().leak(), smap);
-            }
-        }
+        let compiled_function = match groups.get(name) {
+            Some(group) => create_precomp(*id, smap, group.clone()),
+            // Interpreted function
+            None => Precomp {
+                id: *id,
+                name: name.clone().leak(),
+                smap,
+                funs: None,
+            },
+        };
+
+        precomp.insert(*id, compiled_function);
     }
 
     unsafe {
@@ -43,12 +49,7 @@ pub fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
     }
 }
 
-pub fn compile_eval_precomp(
-    precomp: &mut HashMap<u64, Precomp>,
-    id: u64,
-    smap: &'static [bool],
-    group: RuleGroup,
-) {
+pub fn create_precomp(id: u64, smap: StrictMap, group: RuleGroup) -> Precomp {
     let name = group.name.clone();
     let hvm_apply = group.hvm_apply;
     let hvm_visit = group.hvm_visit;
@@ -57,7 +58,7 @@ pub fn compile_eval_precomp(
     println!("[debug]   ir =");
     println!("{:#?}", hvm_apply);
 
-    let item = Precomp {
+    Precomp {
         id,
         name: name.leak(),
         funs: Some(PrecompFuns {
@@ -75,23 +76,5 @@ pub fn compile_eval_precomp(
             }),
         }),
         smap,
-    };
-    precomp.insert(id, item);
-}
-
-pub fn compile_precomp(
-    precomp: &mut HashMap<u64, Precomp>,
-    id: u64,
-    name: &'static str,
-    smap: &'static [bool],
-) {
-    precomp.insert(
-        id,
-        Precomp {
-            id,
-            name,
-            smap,
-            funs: None,
-        },
-    );
+    }
 }
