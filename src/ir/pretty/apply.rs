@@ -75,6 +75,7 @@ impl Debug for Block {
         writeln!(f, "entry:")?;
         for instruction in &self.block {
             instruction.pretty(2, f)?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -238,22 +239,22 @@ impl Display for Value {
 impl Pretty for Instruction {
     fn pretty(&self, n: usize, f: &mut Formatter) -> Result {
         match self {
-            Instruction::Term(term) => indentedln!(f, n, "{term}"),
-            Instruction::IncrementCost => indentedln!(f, n, "increment-cost"),
+            Instruction::Term(term) => indented!(f, n, "{term}"),
+            Instruction::IncrementCost => indented!(f, n, "increment-cost"),
             Instruction::Collect(Collect { term }) => {
-                indentedln!(f, n, "collect {term}")
+                indented!(f, n, "collect {term}")
             }
             Instruction::Free(Free { position, arity }) => {
-                indentedln!(f, n, "free {position} {arity}")
+                indented!(f, n, "free {position} {arity}")
             }
             Instruction::Let(Let { name, value }) => {
-                indentedln!(f, n, "%{name} = {value}")
+                indented!(f, n, "%{name} = {value}")
             }
             Instruction::Return(term) => {
-                indentedln!(f, n, "ret {term}")
+                indented!(f, n, "ret {term}")
             }
             Instruction::Link(Link { position, term }) => {
-                indentedln!(f, n, "link {position} {term}")
+                indented!(f, n, "link {position} {term}")
             }
             Instruction::If(If {
                 condition,
@@ -263,26 +264,32 @@ impl Pretty for Instruction {
                 indentedln!(f, n, "if {condition}:")?;
                 for instruction in &then.block {
                     instruction.pretty(n + 2, f)?;
+                    writeln!(f)?;
                 }
                 indented!(f, n, "")?;
                 if let Some(otherwise) = otherwise {
                     writeln!(f, "else")?;
                     for instruction in &otherwise.block {
                         instruction.pretty(n + 2, f)?;
+                        writeln!(f)?;
                     }
                 }
-                writeln!(f)
+                Ok(())
             }
             Instruction::Println(message) => {
-                indentedln!(f, n, "println {message:?}")
+                indented!(f, n, "println {message:?}")
             }
             Instruction::Metadata(metadata) => {
                 for comment in &metadata.comments {
                     indentedln!(f, n, "; {comment}")?;
                 }
-                indentedln!(f, n, "; term = {term}", term = metadata.term)?;
-                for instruction in &metadata.instructions {
-                    instruction.pretty(n + 2, f)?;
+                for (index, instruction) in metadata.instructions.iter().enumerate() {
+                    instruction.pretty(n, f)?;
+                    if index == metadata.instructions.len() - 1 {
+                        write!(f, " ; term = {term}", term = metadata.term)?;
+                    } else {
+                        writeln!(f)?;
+                    }
                 }
                 Ok(())
             }

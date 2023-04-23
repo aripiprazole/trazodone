@@ -215,7 +215,7 @@ impl Codegen {
     }
 
     fn fresh_name(&mut self, name: &str) -> String {
-        let name = format!("{name}_{}", self.name_index);
+        let name = format!("{}", self.name_index);
         self.name_index += 1;
         name
     }
@@ -236,14 +236,14 @@ impl Codegen {
         arguments
             .iter()
             .cloned()
-            .map(|term| match term {
-                term @ Term::Ref(..) => term,
-                term => {
-                    let name = self.fresh_name("arg");
-                    self.instr(Instruction::binding(&name, term));
-                    Term::reference(&name)
-                }
-            })
+            // .map(|term| match term {
+            //     term @ Term::Ref(..) => term,
+            //     term => {
+            //         let name = self.fresh_name("arg");
+            //         self.instr(Instruction::binding(&name, term));
+            //         Term::reference(&name)
+            //     }
+            // })
             .collect()
     }
 }
