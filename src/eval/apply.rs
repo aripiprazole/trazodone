@@ -2,7 +2,7 @@ use crate::codegen::apply::binary::build_binary_op;
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::apply::{
     Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction,
-    Let, Link, LoadArgument, Position, Op, Tag, Term, Value, U60,
+    Let, Link, LoadArgument, Op, Position, Tag, Term, Value, U60,
 };
 use crate::runtime::{
     hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,

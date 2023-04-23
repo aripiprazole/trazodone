@@ -70,46 +70,42 @@ pub unsafe extern "C" fn hvm__update_cont(ctx: ReduceContext, goup: u64) {
     *ctx.cont = goup;
 }
 
-/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
-pub unsafe extern "C" fn hvm__update_host(ctx: ReduceContext, vbuf: &[AtomicU64], vlen: u64) {
+pub unsafe extern "C" fn hvm__update_host(ctx: ReduceContext, vbuf: *mut AtomicU64, vlen: u64) {
     let ctx = get_context(ctx);
-    let host = vbuf
-        .get_unchecked((vlen - 1) as usize)
-        .load(Ordering::Relaxed);
+    let host = vbuf.add((vlen - 1) as usize).read().load(Ordering::Relaxed);
 
     *ctx.host = host;
 }
 
-/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__visit(
     ctx: ReduceContext,
     parameter_index: u64,
     goup: u64,
-    vbuf: &[AtomicU64],
+    vbuf: *mut AtomicU64,
     vlen: u64,
 ) {
     let ctx = get_context(ctx);
 
     if parameter_index < vlen - 1 {
         let vbuf = vbuf
-            .get_unchecked(parameter_index as usize)
+            .add(parameter_index as usize)
+            .read()
             .load(Ordering::Relaxed);
         let visit = hvm::runtime::new_visit(vbuf, ctx.hold, goup);
         ctx.visit.push(visit);
     }
 }
 
-/// TODO: fix vbuf param
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__increase_vlen(
     ctx: ReduceContext,
     parameter_index: u64,
-    vbuf: &[AtomicU64],
+    vbuf: *mut AtomicU64,
     vlen: u64,
 ) -> u64 {
     let ctx = get_context(ctx);
@@ -117,7 +113,7 @@ pub unsafe extern "C" fn hvm__increase_vlen(
     if hvm::runtime::is_whnf(hvm::runtime::load_arg(ctx.heap, ctx.term, parameter_index)) {
         0
     } else {
-        let atomic = vbuf.get_unchecked(vlen as usize);
+        let atomic = vbuf.add(vlen as usize).read();
         let position = hvm::runtime::get_loc(ctx.term, 0);
         atomic.store(position, Ordering::Relaxed);
 

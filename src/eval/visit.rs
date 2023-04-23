@@ -32,7 +32,7 @@ impl Eval for Instruction {
                 }
                 Instruction::UpdateHost => {
                     let variables = &mut context.variables;
-                    let vbuf = variables
+                    let mut vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
                         .as_ptr::<&'static [AtomicU64]>()
@@ -40,12 +40,12 @@ impl Eval for Instruction {
                         .unwrap();
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
 
-                    hvm__update_host(context.reduce, vbuf, vlen);
+                    hvm__update_host(context.reduce, &mut vbuf as *const _ as *mut _, vlen);
                 }
                 Instruction::IncreaseLen(parameter_index) => {
                     let variables = &mut context.variables;
 
-                    let vbuf = variables
+                    let mut vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
                         .as_ptr::<&'static [AtomicU64]>()
@@ -54,14 +54,19 @@ impl Eval for Instruction {
 
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
 
-                    let new_vlen = hvm__increase_vlen(context.reduce, parameter_index, vbuf, vlen);
+                    let new_vlen = hvm__increase_vlen(
+                        context.reduce,
+                        parameter_index,
+                        &mut vbuf as *const _ as *mut _,
+                        vlen,
+                    );
 
                     variables.insert("vlen".into(), Object::U64(vlen + new_vlen));
                 }
                 Instruction::Visit(parameter_index) => {
                     let variables = &mut context.variables;
 
-                    let vbuf = variables
+                    let mut vbuf = variables
                         .get("vbuf")
                         .expect("vbuf not found")
                         .as_ptr::<&'static [AtomicU64]>()
@@ -71,7 +76,13 @@ impl Eval for Instruction {
                     let vlen = variables.get("vlen").expect("vlen not found").as_u64();
                     let goup = variables.get("goup").expect("goup not found").as_u64();
 
-                    hvm__visit(context.reduce, parameter_index, goup, vbuf, vlen);
+                    hvm__visit(
+                        context.reduce,
+                        parameter_index,
+                        goup,
+                        &mut vbuf as *const _ as *mut _,
+                        vlen,
+                    );
                 }
             }
         }
