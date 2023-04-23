@@ -5,8 +5,6 @@
 
 extern crate core;
 
-use std::arch::asm;
-
 pub mod cli;
 pub mod codegen;
 pub mod eval;

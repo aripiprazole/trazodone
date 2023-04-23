@@ -9,21 +9,20 @@
 //!     the main function of executing a rule. This function is responsible for
 //!     executing the rule, and returning the result of the rule. The stages are
 //!     the following:
-//!       Syntax
-//!         -> IR Codegen
+//!       Syntax [crate::codegen::syntax]
+//!         -> IR Codegen [crate::codegen::apply]
 //!         -> Inline Declarations
-//!         -> Control Flow Graph
+//!         -> Control Flow Graph [crate::codegen::apply::graph]
 //!         -> LLVM IR
 //!         -> JIT/AOT // basically executing
 //!     TODO: LLVM IR
 //!     TODO: Inline Declarations
-//!     TODO: Control Flow Graph
 //!
 //!   Visit: This stage generates the code for the `visit` function, which is
 //!     the function that's responsible about reducing to the WHNF form the strict
 //!     arguments of a function application.
-//!       Syntax
-//!         -> IR Codegen
+//!       Syntax [crate::codegen::syntax]
+//!         -> IR Codegen [crate::codegen::visit]
 //!         -> LLVM IR
 //!         -> JIT/AOT // basically executing
 //!     TODO: LLVM IR

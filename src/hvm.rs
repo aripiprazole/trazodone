@@ -59,10 +59,11 @@ pub fn create_precomp(id: u64, smap: StrictMap, group: RuleGroup) -> Precomp {
     let name = group.name.clone();
     let hvm_apply = group.hvm_apply.clone();
     let hvm_visit = group.hvm_visit.clone();
+    let cfg = hvm_apply.clone().into_control_flow_graph();
 
     println!("[debug] apply: {:?}", group.name);
     println!("[debug]   ir =");
-    println!("{:#?}", hvm_apply);
+    println!("{}", cfg);
 
     unsafe {
         use std::mem::transmute;

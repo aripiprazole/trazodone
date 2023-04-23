@@ -291,6 +291,12 @@ impl Pretty for Instruction {
     }
 }
 
+impl Display for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        Display::fmt(&self.boxed(), f)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

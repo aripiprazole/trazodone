@@ -18,6 +18,7 @@ pub mod free;
 pub mod metadata;
 pub mod term;
 pub mod variable;
+pub mod graph;
 
 pub type Result<T> = std::result::Result<T, String>;
 

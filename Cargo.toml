@@ -12,3 +12,5 @@ llvm-sys = "150.0.5"
 itertools = "0.10"
 clap = { version = "4.2.4", features = ["derive"] }
 colored = "2.0.0"
+rand = "0.8.5"
+
