@@ -12,6 +12,7 @@ pub mod hvm;
 pub mod ir;
 pub mod llvm;
 pub mod runtime;
+pub mod pretty;
 
 /// The `trazodone` command entrypoint.
 ///
