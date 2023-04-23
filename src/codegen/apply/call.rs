@@ -9,22 +9,29 @@ impl Codegen {
         let callee = self.build_term(callee);
         let argument = self.build_term(arguments.first().unwrap().clone());
 
-        let done = self.alloc(2);
+        let done = self.make_agent(|arguments| {
+            arguments.push(callee);
+            arguments.push(argument);
+        });
         self.instr(Instruction::binding(&name, done));
-        self.instr(Instruction::link(Position::initial(&name), callee));
-        self.instr(Instruction::link(Position::new(&name, 1), argument));
 
         Term::create_app(Position::initial(&name))
     }
 
     pub fn build_constructor(&mut self, arguments: Vec<syntax::Term>, global_name: String) -> Term {
-        let name = self.fresh_name("constructor");
-        let value = self.alloc(arguments.len() as u64);
-        self.instr(Instruction::binding(&name, value));
-
         let compiled_global_name = build_name(&global_name);
 
-        self.build_arguments(&arguments, name.clone());
+        let arguments = arguments
+            .iter()
+            .map(|argument| self.build_term(argument.clone()))
+            .collect::<Vec<_>>();
+
+        let name = self.fresh_name("constructor");
+        let value = self.make_agent(|builder| {
+            builder.extend(arguments);
+        });
+
+        self.instr(Instruction::binding(&name, value));
 
         let index = self
             .global
@@ -39,13 +46,19 @@ impl Codegen {
     }
 
     pub fn build_call(&mut self, arguments: Vec<syntax::Term>, global_name: String) -> Term {
-        let name = self.fresh_name("call");
-        let value = self.alloc(arguments.len() as u64);
-        self.instr(Instruction::binding(&name, value));
-
         let compiled_global_name = build_name(&global_name);
 
-        self.build_arguments(&arguments, name.clone());
+        let arguments = arguments
+            .iter()
+            .map(|argument| self.build_term(argument.clone()))
+            .collect::<Vec<_>>();
+
+        let name = self.fresh_name("call");
+        let value = self.make_agent(|builder| {
+            builder.extend(arguments);
+        });
+
+        self.instr(Instruction::binding(&name, value));
 
         let index = self
             .global

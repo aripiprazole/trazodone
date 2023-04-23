@@ -18,11 +18,12 @@ impl Codegen {
         let rhs = self.build_term(rhs);
 
         // TODO: Optimization: do inline operation, avoiding Op2 allocation, when operands are already number
-        let binary_alloc = self.alloc(2);
+        let binary_alloc = self.make_agent(|builder| {
+            builder.push(lhs.clone());
+            builder.push(rhs.clone());
+        });
 
         self.instr(Instruction::binding(&binary, binary_alloc));
-        self.instr(Instruction::link(Position::initial(&binary), lhs.clone()));
-        self.instr(Instruction::link(Position::new(&binary, 1), rhs.clone()));
 
         Term::create_binary(lhs, op, rhs, Position::initial(&binary))
     }

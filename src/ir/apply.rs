@@ -167,6 +167,12 @@ pub struct ArityOf {
 }
 
 #[derive(Debug, Clone)]
+pub struct Agent {
+    pub arity: u64,
+    pub arguments: Vec<Term>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Term {
     Current,
 
@@ -180,6 +186,7 @@ pub enum Term {
     TakeArgument(TakeArgument),
     LoadArgument(LoadArgument),
     Alloc(Alloc),
+    Agent(Agent),
 
     // * Internal
     Ext(u64, String),
@@ -326,6 +333,15 @@ impl Term {
         Term::Alloc(Alloc { size })
     }
 
+    pub fn make_agent<F: FnOnce(&mut Vec<Term>)>(f: F) -> Self {
+        let mut arguments = Vec::new();
+        f(&mut arguments);
+        Term::Agent(Agent {
+            arity: arguments.len() as u64,
+            arguments,
+        })
+    }
+    
     // create
     pub fn create_dp0(color: u64, position: Position) -> Self {
         Term::Create(Value::Dp0(Color(color), position))

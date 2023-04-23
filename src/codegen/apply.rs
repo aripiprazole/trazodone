@@ -17,9 +17,9 @@ pub mod call;
 pub mod collect;
 pub mod deconstruct;
 pub mod free;
+pub mod metadata;
 pub mod term;
 pub mod variable;
-pub mod metadata;
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -95,8 +95,7 @@ impl Codegen {
                 then.build_free(&rule, group);
                 then.instr(Instruction::Return(Term::True));
 
-                self
-                    .instr(Instruction::cond(match_rule, then.instructions, None));
+                self.instr(Instruction::cond(match_rule, then.instructions, None));
             }
         }
 
@@ -148,10 +147,7 @@ impl Codegen {
             // FIXME: sanitizer still can't detect if a scope-less lambda doesn't use its bound
             //        variable, so we must write an Era() here. When it does, we can remove
             //        this line.
-            self.instr(Instruction::link(
-                Position::initial(&name),
-                Term::erased(),
-            ));
+            self.instr(Instruction::link(Position::initial(&name), Term::erased()));
             self.lambdas.insert(global_id, name.clone());
         }
 
@@ -171,6 +167,16 @@ impl Codegen {
         // this should be turned off. I'll decide later.
 
         Term::alloc(size)
+    }
+
+    pub fn make_agent<F: FnOnce(&mut Vec<Term>)>(&mut self, f: F) -> Term {
+        let mut arguments = Vec::new();
+        f(&mut arguments);
+
+        Term::Agent(Agent {
+            arity: arguments.len() as u64,
+            arguments: self.extract_argument_references(arguments),
+        })
     }
 
     pub fn instr(&mut self, instruction: Instruction) {
@@ -215,5 +221,19 @@ impl Codegen {
             constant_extensions: self.constant_extensions.clone(),
             constant_tags: self.constant_tags.clone(),
         }
+    }
+    fn extract_argument_references(&mut self, arguments: Vec<Term>) -> Vec<Term> {
+        arguments
+            .iter()
+            .cloned()
+            .map(|term| match term {
+                term @ Term::Ref(..) => term,
+                term => {
+                    let name = self.fresh_name("arg");
+                    self.instr(Instruction::binding(&name, term));
+                    Term::reference(&name)
+                }
+            })
+            .collect()
     }
 }

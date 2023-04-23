@@ -1,8 +1,8 @@
 use crate::codegen::apply::binary::build_binary_op;
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::apply::{
-    Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction, Let,
-    Link, LoadArgument, Position, PositionBinary, Tag, Term, Value, U60,
+    Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag, If, Instruction,
+    Let, Link, LoadArgument, Position, PositionBinary, Tag, Term, Value, U60,
 };
 use crate::runtime::{
     hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,
@@ -70,6 +70,21 @@ impl Eval for Term {
                 Term::True => Object::Bool(true),
                 Term::False => Object::Bool(false),
                 Term::Alloc(Alloc { size }) => Object::U64(hvm__alloc(context.reduce, size)),
+                Term::Agent(Agent { arguments, .. }) => {
+                    let name = format!("agent_{}", context.variables.len() + 1);
+                    let value = hvm__alloc(context.reduce, 1);
+                    context
+                        .variables
+                        .insert(name.clone(), Object::U64(value.clone()));
+
+                    for (i, argument) in arguments.iter().enumerate() {
+                        let position = Position::new(&name, i as u64).eval(context);
+                        let ptr = argument.clone().eval(context);
+                        hvm__link(context.reduce, position, ptr.as_u64());
+                    }
+
+                    Object::U64(value)
+                }
                 Term::Equal(box lhs, box rhs) => {
                     let lhs = lhs.eval(context);
                     let rhs = rhs.eval(context);

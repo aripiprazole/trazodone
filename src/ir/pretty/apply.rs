@@ -166,6 +166,19 @@ impl Display for Term {
             Term::GetExt(GetExt { term }) => write!(f, "{term}/ext"),
             Term::GetTag(GetTag { term }) => write!(f, "{term}/tag"),
             Term::Alloc(Alloc { size }) => write!(f, "(alloc ~arity: {size})"),
+            Term::Agent(Agent { arguments, .. }) => {
+                write!(f, "make-agent")?;
+
+                if arguments.is_empty() {
+                    return write!(f, "");
+                }
+
+                for argument in arguments {
+                    write!(f, " {argument}")?;
+                }
+
+                Ok(())
+            }
             Term::NotFound(atom) => {
                 write!(f, "(! not-found {atom:?} !)")
             }
