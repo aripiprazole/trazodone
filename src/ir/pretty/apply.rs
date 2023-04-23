@@ -94,7 +94,7 @@ impl Display for F60 {
 
 impl Display for FunctionId {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "'{}", self.1.clone().unwrap_or(self.0.clone()))
+        write!(f, "'{}", self.1)
     }
 }
 

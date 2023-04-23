@@ -8,7 +8,7 @@ use ErrorKind::InvalidValue;
 
 use crate::cli::{Cli, EvalArgs};
 use crate::codegen::syntax::Transform;
-use crate::codegen::{build_name, GlobalContext};
+use crate::codegen::GlobalContext;
 use crate::ir::rule::RuleGroup;
 
 pub fn run_eval(args: EvalArgs) {
@@ -68,7 +68,7 @@ fn setup_eval_environment(code: &str) {
     let book = hvm::language::rulebook::gen_rulebook(&file);
 
     let global = setup_global_context(&book);
-    let groups = ir_codegen_book(&book, &global);
+    let groups = ir_codegen_book(&book, global);
 
     crate::precomp::setup_precomp(book, groups);
 }
@@ -79,13 +79,13 @@ fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {
 
     let mut global: Box<GlobalContext> = Box::default();
     for (id, name) in itertools::sorted(id_to_name.iter()) {
-        global.constructors.insert(build_name(name), *id);
+        global.constructors.insert(name.clone(), *id);
     }
 
     global
 }
 
-fn ir_codegen_book(book: &RuleBook, global: &Box<GlobalContext>) -> HashMap<String, RuleGroup> {
+fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> HashMap<String, RuleGroup> {
     book.clone()
         .transform()
         .unwrap()

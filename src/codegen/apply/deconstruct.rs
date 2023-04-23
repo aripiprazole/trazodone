@@ -20,12 +20,7 @@ impl Codegen {
                 Term::equal(Term::get_num(argument), Term::create_f60(value)),
             ),
             Constructor(syntax::Constructor { name, .. }) => {
-                let compiled_global_name = build_name(&name);
-                let id = *self
-                    .global
-                    .constructors
-                    .get(&compiled_global_name)
-                    .unwrap_or_else(|| panic!("no constructor for {}", compiled_global_name));
+                let id = self.get_name_id(&name);
 
                 Term::logical_and(
                     Term::equal(Term::get_tag(argument.clone()), self.tag(Tag::CONSTRUCTOR)),

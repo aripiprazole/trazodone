@@ -183,6 +183,16 @@ impl Codegen {
         self.instructions.push(instruction);
     }
 
+    pub fn get_name_id(&mut self, name: &str) -> u64 {
+        let index = self
+            .global
+            .constructors
+            .get(name)
+            .unwrap_or_else(|| panic!("no constructor for {}", name));
+
+        *index
+    }
+
     fn build_constructor_patterns(&mut self, rule: &Rule, then: &mut Block) {
         let constructor_parameters = rule
             .parameters
