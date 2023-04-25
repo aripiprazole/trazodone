@@ -24,10 +24,15 @@ pub mod variable;
 pub type Result<T> = std::result::Result<T, String>;
 
 pub struct Codegen {
-    variables: Vec<(String, Term)>,
     lambdas: FxHashMap<u64, String>,
     global: Box<GlobalContext>,
     arguments: Vec<argument::Argument>,
+
+    /// The variables that are used in this codegen, to be found within the
+    /// [crate::ir::syntax::Atom] terms.
+    ///
+    /// TODO: This should be a [FxHashMap] instead of a [Vec]
+    variables: Vec<(String, Term)>,
 
     /// The name index is used to generate unique names for the variables
     name_index: u64,
@@ -167,9 +172,9 @@ impl Codegen {
                 let name = self.fresh_name("pat");
                 let argument = self.get_argument(argument);
                 let term = Term::load_arg(argument.clone().unbox(), index as u64);
-                let instr = Instruction::binding(&name, term);
                 argument.add_field(Term::reference(&name));
-                self.instr(instr);
+                self.variables.push((name.clone(), Term::reference(&name)));
+                self.instr(Instruction::binding(&name, term));
             }
         }
     }

@@ -1,6 +1,5 @@
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::*;
-use crate::ir::syntax;
 use crate::ir::syntax::{Atom as IRAtom, Lam as IRLam, Let as IRLet, Term as IRTerm};
 
 impl Codegen {
@@ -68,21 +67,14 @@ impl Codegen {
             index,
             field_index,
         } = expr;
-        match self.variables.get(index as usize) {
-            Some((_, value)) => value.clone(),
-            // TODO: fix this simple workaround
-            None => self
-                .variables
-                .iter()
-                .find(|(var_name, _)| var_name == &name)
-                .map(|(_, value)| value.clone())
-                .unwrap_or_else(|| {
-                    Term::NotFound(syntax::Atom {
-                        name,
-                        index,
-                        field_index,
-                    })
-                }),
-        }
+
+        let (_, term) = self.variables.get(index as usize).unwrap_or_else(|| {
+            panic!(
+                "Variable not found: {:?} (index: {}, field_index: {:?})",
+                &name, index, field_index
+            )
+        });
+
+        term.clone()
     }
 }

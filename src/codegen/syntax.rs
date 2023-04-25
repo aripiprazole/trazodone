@@ -8,22 +8,24 @@ use crate::ir::syntax::*;
 
 pub type Result<T> = std::result::Result<T, String>;
 
-pub trait Transform {
-    type Output;
-
-    fn transform(self) -> Result<Self::Output>;
-}
-
+#[derive(Debug)]
 pub struct Variable {
     pub name: Option<String>,
     pub index: u64,
     pub field_index: Option<u64>,
 }
 
+#[derive(Debug)]
 pub struct Context {
     pub index: u64,
     pub variables: Vec<Variable>,
     pub book: RuleBook,
+}
+
+pub trait Transform {
+    type Output;
+
+    fn transform(self) -> Result<Self::Output>;
 }
 
 trait ContextTransform {
@@ -72,7 +74,7 @@ impl ContextTransform for hvm::syntax::Term {
                     if variable.name == Some(name.clone()) {
                         Some(Ok(Term::Atom(Atom {
                             name: name.clone(),
-                            index: if index == 0 { 0 } else { (index - 1) as u64 },
+                            index: index as u64,
                             field_index: variable.field_index,
                         })))
                     } else {
@@ -98,12 +100,16 @@ impl ContextTransform for hvm::syntax::Term {
                     0
                 };
 
-                Ok(Term::Lam(syntax::Lam {
+                let lam_expr = syntax::Lam {
                     global_id,
                     erased,
                     parameter: name,
                     value: body.transform(context)?.into(),
-                }))
+                };
+
+                context.variables.pop();
+
+                Ok(Term::Lam(lam_expr))
             }
             App { box func, box argm } => Ok(Term::App(syntax::App {
                 is_function: false,
@@ -132,16 +138,20 @@ impl ContextTransform for hvm::syntax::Term {
                 box expr,
                 box body,
             } => {
+                let expr = expr.transform(context)?;
+
                 context.variables.push(Variable {
                     name: Some(name.clone()),
                     index: 0,
                     field_index: None,
                 });
+                let body = body.transform(context)?;
+                context.variables.pop();
 
                 Ok(Term::Let(syntax::Let {
                     name,
-                    value: expr.transform(context)?.into(),
-                    body: body.transform(context)?.into(),
+                    value: expr.into(),
+                    body: body.into(),
                 }))
             }
             Dup {
