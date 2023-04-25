@@ -1,5 +1,5 @@
 use crate::codegen::apply::Codegen;
-use crate::ir::apply::{Tag, Term};
+use crate::ir::apply::{Instruction, Tag, Term};
 use crate::ir::syntax;
 use crate::ir::syntax::*;
 
@@ -40,4 +40,30 @@ impl Codegen {
             _ => Term::True,
         }
     }
+
+    pub fn build_constructor_patterns(&mut self, rule: &Rule) {
+        let constructor_parameters = rule
+            .parameters
+            .iter()
+            .enumerate()
+            .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
+        for (argument, parameter) in constructor_parameters {
+            let Parameter::Constructor(constructor) = parameter else {
+                continue;
+            };
+
+            for (index, _) in constructor.flatten_patterns.iter().enumerate() {
+                let name = self.fresh_name("pat");
+                let argument = self.get_argument(argument);
+                let term = Term::load_arg(argument.clone().unbox(), index as u64);
+                argument.add_field(Term::reference(&name));
+
+                // Pushes to the variables, and creates a binding instruction,
+                // initializing the variable with the term.
+                self.variables.push((name.clone(), Term::reference(&name)));
+                self.instr(Instruction::binding(&name, term));
+            }
+        }
+    }
+
 }

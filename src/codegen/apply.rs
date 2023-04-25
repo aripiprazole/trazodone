@@ -2,7 +2,6 @@ use fxhash::FxHashMap;
 
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
-use crate::ir::syntax::{Parameter, Rule};
 
 pub type Insertion = Block;
 pub type FreeIndex = u64;
@@ -13,16 +12,28 @@ pub mod argument;
 pub mod binary;
 pub mod call;
 pub mod collect;
-pub mod deconstruct;
+pub mod pattern;
 pub mod free;
 pub mod graph;
 pub mod group;
 pub mod metadata;
 pub mod term;
 pub mod variable;
+pub mod lam;
+pub mod atom;
 
 pub type Result<T> = std::result::Result<T, String>;
 
+/// Apply codegen structure
+///
+/// The codegen is responsible for generating the [crate::ir::apply::Term] from the
+/// [crate::ir::syntax::Term] and [crate::ir::syntax::Rule] structures.
+///
+/// The codegen is split into multiple modules, each responsible for a specific
+/// part of the codegen process.
+///
+/// The main function for the codegen is [Codegen::build_apply], which is going to
+/// build the `apply` function internal intermediate representation.
 pub struct Codegen {
     lambdas: FxHashMap<u64, String>,
     global: Box<GlobalContext>,
@@ -87,26 +98,6 @@ impl Codegen {
         Term::ext(id, name)
     }
 
-    /// Allocates a new lambda, or returns the existing one.
-    pub fn alloc_lam(&mut self, global_id: u64) -> String {
-        if let Some(global_term) = self.lambdas.get(&global_id) {
-            return global_term.clone();
-        }
-
-        let name = self.fresh_name("lam");
-        self.instr(Instruction::binding(&name, Term::alloc(2)));
-
-        if global_id != 0 {
-            // FIXME: sanitizer still can't detect if a scope-less lambda doesn't use its bound
-            //        variable, so we must write an Era() here. When it does, we can remove
-            //        this line.
-            self.instr(Instruction::link(Position::initial(&name), Term::erased()));
-            self.lambdas.insert(global_id, name.clone());
-        }
-
-        name
-    }
-
     pub fn alloc(&mut self, size: u64) -> Term {
         // TODO:
         // This will avoid calls to alloc() by reusing nodes from the left-hand side. Sadly, this seems
@@ -155,28 +146,6 @@ impl Codegen {
         let name = format!("{}", self.name_index);
         self.name_index += 1;
         name
-    }
-
-    fn build_constructor_patterns(&mut self, rule: &Rule) {
-        let constructor_parameters = rule
-            .parameters
-            .iter()
-            .enumerate()
-            .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
-        for (argument, parameter) in constructor_parameters {
-            let Parameter::Constructor(constructor) = parameter else {
-                continue;
-            };
-
-            for (index, _) in constructor.flatten_patterns.iter().enumerate() {
-                let name = self.fresh_name("pat");
-                let argument = self.get_argument(argument);
-                let term = Term::load_arg(argument.clone().unbox(), index as u64);
-                argument.add_field(Term::reference(&name));
-                self.variables.push((name.clone(), Term::reference(&name)));
-                self.instr(Instruction::binding(&name, term));
-            }
-        }
     }
 
     fn new_block(&self, instruction: Instruction) -> Self {

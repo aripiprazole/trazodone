@@ -1,6 +1,6 @@
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::*;
-use crate::ir::syntax::{Atom as IRAtom, Lam as IRLam, Let as IRLet, Term as IRTerm};
+use crate::ir::syntax::{Let as IRLet, Term as IRTerm};
 
 impl Codegen {
     pub fn build_term(&mut self, term: IRTerm) -> Term {
@@ -23,29 +23,6 @@ impl Codegen {
         }
     }
 
-    fn build_lam(&mut self, expr: IRLam) -> Term {
-        let IRLam {
-            box value,
-            parameter,
-            erased,
-            global_id,
-        } = expr;
-
-        let name = self.alloc_lam(global_id);
-        let atom = Term::create_atom(Position::initial(&name));
-
-        self.variables.push((parameter, atom)); // Push to the variable stack
-        let value = self.build_term(value);
-        self.variables.pop();
-
-        if erased {
-            self.instr(Instruction::link(Position::initial(&name), Term::erased()));
-        }
-        self.instr(Instruction::link(Position::new(&name, 1), value));
-
-        Term::create_lam(Position::initial(&name))
-    }
-
     fn build_let(&mut self, expr: IRLet) -> Term {
         let IRLet {
             name,
@@ -59,22 +36,5 @@ impl Codegen {
         self.variables.pop();
 
         body
-    }
-
-    fn build_atom(&mut self, expr: IRAtom) -> Term {
-        let IRAtom {
-            name,
-            index,
-            field_index,
-        } = expr;
-
-        let (_, term) = self.variables.get(index as usize).unwrap_or_else(|| {
-            panic!(
-                "Variable not found: {:?} (index: {}, field_index: {:?})",
-                &name, index, field_index
-            )
-        });
-
-        term.clone()
     }
 }
