@@ -1,9 +1,10 @@
-use inkwell::OptimizationLevel;
+use std::error::Error;
+
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::execution_engine::{ExecutionEngine, JitFunction};
+use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
-use std::error::Error;
+use inkwell::OptimizationLevel;
 
 pub struct Codegen<'a> {
     pub context: &'a Context,
@@ -35,7 +36,5 @@ mod tests {
     pub fn it_works() {
         let context = Context::create();
         let codegen = Codegen::new(&context).unwrap();
-
-
     }
 }

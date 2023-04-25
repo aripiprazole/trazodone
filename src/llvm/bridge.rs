@@ -1,11 +1,12 @@
 use hvm::ReduceCtx;
-use llvm_sys::core::*;
+use inkwell::builder::Builder;
+use inkwell::context::Context;
+use inkwell::module::Module;
+use inkwell::AddressSpace;
 use llvm_sys::execution_engine::LLVMLinkInMCJIT;
-use llvm_sys::prelude::{LLVMBuilderRef, LLVMContextRef, LLVMModuleRef};
 use llvm_sys::target::{LLVM_InitializeNativeAsmPrinter, LLVM_InitializeNativeTarget};
 
 use crate::ir::rule::RuleGroup;
-use crate::llvm::cstr::cstr;
 
 /// FIXME: its throwing segfault or invalid free.
 ///
@@ -33,88 +34,96 @@ use crate::llvm::cstr::cstr;
 /// Since, the `group` is a constant pointer, it can be passed as a constant
 /// and dereferenced as hardcode, but the `ctx` is a function argument, so
 /// this is passed as a function argument.
-pub struct Bridge {
-    pub module: LLVMModuleRef,
-    pub context: LLVMContextRef,
-    pub builder: LLVMBuilderRef,
+pub struct Bridge<'a> {
+    pub context: &'a Context,
+    pub module: Module<'a>,
+    pub builder: Builder<'a>,
 }
 
 type EvalFn = fn(*mut RuleGroup, *mut ReduceCtx) -> bool;
 
-impl Bridge {
-    pub unsafe fn new(name: &str) -> Self {
-        let module = LLVMModuleCreateWithName(cstr!(name));
-        let context = LLVMGetModuleContext(module);
-        let builder = LLVMCreateBuilderInContext(context);
+impl<'a> Bridge<'a> {
+    pub fn new(context: &'a Context) -> Self {
+        let module = context.create_module("hvm__bridge");
 
         Self {
-            module,
             context,
-            builder,
+            module,
+            builder: context.create_builder(),
         }
     }
 
-    pub unsafe fn create(&self, f: EvalFn, name: &str, group: *mut RuleGroup) -> String {
-        let module = self.module;
-        let builder = self.builder;
-
-        // Function signature: <<name>>(%ctx: <<reduce_ctx>>) -> i1
-        let mut parameters = [LLVMPointerType(LLVMInt8Type(), 0)];
-        let function_type = LLVMFunctionType(LLVMInt1Type(), parameters.as_mut_ptr(), 1, 0);
-        let apply_function = LLVMAddFunction(module, cstr!(name), function_type);
+    /// Create a function that can be called from llvm, and it can call a rust
+    pub fn create(&self, f: EvalFn, name: &str, group: *mut RuleGroup) -> String {
+        // Function signature: <<name>>(%ctx: *mut <<reduce_ctx>>) -> i1
+        let function_type = self.context.bool_type().fn_type(
+            &[self
+                .context
+                .i8_type()
+                .ptr_type(AddressSpace::default())
+                .into()],
+            false,
+        );
+        let function = self.module.add_function(name, function_type, None);
 
         // Function type: (*mut <<rule_group>>, *mut <<reduce_ctx>>) -> i1
-        let mut bridge_function_parameters = [
-            LLVMPointerType(LLVMInt8Type(), 0),
-            LLVMPointerType(LLVMInt8Type(), 0),
-        ];
-        let bridge_function_type = LLVMFunctionType(
-            LLVMInt1Type(),
-            bridge_function_parameters.as_mut_ptr(),
-            2,
-            0,
+        let bridge_function_type = self.context.bool_type().fn_type(
+            &[
+                self.context
+                    .i8_type()
+                    .ptr_type(AddressSpace::default())
+                    .into(),
+                self.context
+                    .i8_type()
+                    .ptr_type(AddressSpace::default())
+                    .into(),
+            ],
+            false,
         );
 
         //>>>Create entry
-        let entry = LLVMAppendBasicBlock(apply_function, cstr!("entry"));
-        LLVMPositionBuilderAtEnd(builder, entry);
+        let entry = self.context.append_basic_block(function, "entry");
+        self.builder.position_at_end(entry);
         //<<<
 
         //>>>Build rule group pointer with constant, to evaluate it
-        let rule_group_ptr = LLVMConstInt(LLVMInt64Type(), group as u64, 0);
-        let rule_group_ptr = LLVMBuildIntToPtr(
-            builder,
-            rule_group_ptr,
-            LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0),
-            cstr!("rule_group_ptr"),
+        let group = self.context.i64_type().const_int(group as u64, false);
+        let group = self.builder.build_int_to_ptr(
+            group,
+            self.context
+                .i8_type()
+                .ptr_type(AddressSpace::default())
+                .ptr_type(AddressSpace::default()),
+            "rule_group_ptr",
         );
         //<<<
 
         //>>>Build function pointer within a non-closure function, to call it
         //   on llvm.
-        let eval_fn_ptr = LLVMConstInt(LLVMInt64Type(), f as usize as u64, 0);
-        let eval_fn_ptr = LLVMBuildIntToPtr(
-            builder,
-            eval_fn_ptr,
-            LLVMPointerType(bridge_function_type, 0),
-            cstr!("eval_fn"),
+        let eval_fn = self.context.i64_type().const_int(f as usize as u64, false);
+        let eval_fn = self.builder.build_int_to_ptr(
+            eval_fn,
+            bridge_function_type.ptr_type(AddressSpace::default()),
+            "eval_fn",
         );
         //<<<
 
         //>>>Build bridge call
-        let mut eval_fn_ptr_arguments = [rule_group_ptr, LLVMGetParam(apply_function, 0)];
-        let return_value = LLVMBuildCall2(
-            builder,
-            bridge_function_type,
-            eval_fn_ptr,
-            eval_fn_ptr_arguments.as_mut_ptr(),
-            2,
-            cstr!("bridge_call"),
-        );
+        let bridge_call = self
+            .builder
+            .build_indirect_call(
+                bridge_function_type,
+                eval_fn,
+                &[group.into(), function.get_first_param().unwrap().into()],
+                "bridge_call",
+            )
+            .try_as_basic_value()
+            .left()
+            .unwrap();
         //<<<
 
         //>>>Return bridge call value
-        LLVMBuildRet(builder, return_value);
+        self.builder.build_return(Some(&bridge_call));
         //<<<
 
         name.into()
@@ -129,11 +138,10 @@ pub unsafe fn initialize_llvm() {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::CStr;
+    use std::mem::transmute;
+    use std::ptr::null_mut;
 
-    use llvm_sys::core::LLVMPrintModuleToString;
-
-    use crate::llvm::execution::ExecutionEngine;
+    use inkwell::OptimizationLevel;
 
     use super::*;
 
@@ -151,20 +159,20 @@ mod tests {
         unsafe {
             initialize_llvm();
 
-            let bridge = Bridge::new("hvm_apply");
-            let group = RuleGroup::default();
-            let group = Box::leak(Box::new(group));
-            let name = format!("__bridge__{}", group.name);
-            bridge.create(eval_fn, &name, group);
+            let context = Context::create();
+            let bridge = Bridge::new(&context);
+            let execution_engine = bridge
+                .module
+                .create_jit_execution_engine(OptimizationLevel::None)
+                .unwrap();
 
-            let execution_engine = ExecutionEngine::try_new(bridge.module).unwrap();
-            let module_string = LLVMPrintModuleToString(bridge.module);
-            let module_string = CStr::from_ptr(module_string).to_string_lossy();
+            let group: &mut RuleGroup = Box::leak(Box::default());
+            let name = bridge.create(eval_fn, &format!("__bridge__{}", group.name), group);
 
-            println!("{module_string}");
+            println!("{}", bridge.module.print_to_string().to_string_lossy());
 
-            let llvm_fn = execution_engine.get_function_address(&name);
-            let llvm_fn = std::mem::transmute::<_, extern "C" fn(*mut ReduceCtx) -> bool>(llvm_fn);
+            let fun = execution_engine.get_function_address(&name).unwrap();
+            let fun = transmute::<_, unsafe extern "C" fn(*mut ReduceCtx) -> bool>(fun);
 
             // If we use the following code, the program will crash.
             // because, `&*` will deref the pointer, and then, the pointer will be used as a reference.
@@ -176,13 +184,13 @@ mod tests {
                 cont: &mut 0,
                 host: &mut 0,
                 hold: false,
-                heap: std::mem::transmute(std::ptr::null_mut::<u8>()),
-                prog: std::mem::transmute(std::ptr::null_mut::<u8>()),
-                visit: std::mem::transmute(std::ptr::null_mut::<u8>()),
-                redex: std::mem::transmute(std::ptr::null_mut::<u8>()),
+                heap: transmute(null_mut::<u8>()),
+                prog: transmute(null_mut::<u8>()),
+                visit: transmute(null_mut::<u8>()),
+                redex: transmute(null_mut::<u8>()),
             };
 
-            println!("{}", llvm_fn(&mut ctx as *const _ as *mut _));
+            println!("{}", fun(&mut ctx as *const _ as *mut _));
         };
     }
 }

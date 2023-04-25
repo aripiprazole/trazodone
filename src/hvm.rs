@@ -3,12 +3,12 @@ use std::sync::Arc;
 use fxhash::FxHashMap;
 use hvm::rulebook::RuleBook;
 use hvm::{Precomp, PrecompFuns, ReduceCtx, PRECOMP};
+use inkwell::OptimizationLevel;
 use itertools::Itertools;
 
 use crate::eval::{Context, Control, Eval};
 use crate::ir::rule::RuleGroup;
 use crate::llvm::bridge::{initialize_llvm, Bridge};
-use crate::llvm::execution::ExecutionEngine;
 
 type StrictMap = &'static [bool];
 
@@ -68,17 +68,24 @@ pub fn create_precomp(id: u64, smap: StrictMap, group: RuleGroup) -> Precomp {
     unsafe {
         use std::mem::transmute;
 
-        let bridge = Bridge::new(&format!("bridge_eval_{}", name));
         let group = Box::leak(Box::new(group));
+
+        let context = inkwell::context::Context::create();
+        let bridge = Bridge::new(&context);
+
         let visit_fn = bridge.create(visit_fn, &format!("{}__visit", name), group);
         let apply_fn = bridge.create(apply_fn, &format!("{}__apply", name), group);
-        let execution = ExecutionEngine::try_new(bridge.module).unwrap();
+
+        let engine = bridge
+            .module
+            .create_jit_execution_engine(OptimizationLevel::None)
+            .unwrap();
 
         let _apply_fn: fn(*mut ReduceCtx) -> bool =
-            transmute(execution.get_function_address(&apply_fn));
+            transmute(engine.get_function_address(&apply_fn).unwrap());
 
         let _visit_fn: fn(*mut ReduceCtx) -> bool =
-            transmute(execution.get_function_address(&visit_fn));
+            transmute(engine.get_function_address(&visit_fn).unwrap());
 
         Precomp {
             id,
