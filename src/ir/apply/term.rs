@@ -119,16 +119,16 @@ pub struct Agent {
 }
 
 impl Term {
-    pub fn get_tag(term: Term) -> Self {
-        Term::GetTag(GetTag { term: term.into() })
+    pub fn get_tag(&self) -> Self {
+        Term::GetTag(GetTag { term: self.clone().into() })
     }
 
-    pub fn get_num(term: Term) -> Self {
-        Term::GetNumber(GetNumber { term: term.into() })
+    pub fn get_num(&self) -> Self {
+        Term::GetNumber(GetNumber { term: self.clone().into() })
     }
 
-    pub fn get_ext(term: Term) -> Self {
-        Term::GetExt(GetExt { term: term.into() })
+    pub fn get_ext(&self) -> Self {
+        Term::GetExt(GetExt { term: self.clone().into() })
     }
 
     pub fn arity_of(term: Term) -> Self {

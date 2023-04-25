@@ -1,7 +1,9 @@
+use itertools::Itertools;
+use crate::codegen::apply::argument::Argument;
+
 use crate::codegen::apply::Codegen;
 use crate::ir::apply::{Block, Instruction, Term};
 use crate::ir::syntax;
-use itertools::Itertools;
 
 impl Codegen {
     pub fn build_apply(&mut self, group: &syntax::RuleGroup) -> super::Result<Block> {
@@ -13,21 +15,17 @@ impl Codegen {
         }
 
         for i in 0..strict_parameters.len() {
-            self.instructions.push(Instruction::binding(
-                &format!("arg{i}"),
-                Term::load_arg(Term::Current, i as u64),
-            ));
+            let name = self.fresh_name("arg");
+            let term = Term::load_arg(Term::Current, i as u64);
+
+            self.instr(Instruction::binding(&name, term));
+            self.arguments.push(Argument::new(Term::reference(&name)));
         }
 
         // TODO: superpose
 
         for rule in rules {
             let collect = self.create_collect(&rule);
-
-            self.variables = collect
-                .iter()
-                .map(|variable| ("*".into(), variable.as_term()))
-                .collect();
 
             let mut match_rule = Term::True;
             for (i, parameter) in rule.parameters.iter().cloned().enumerate() {
@@ -37,6 +35,10 @@ impl Codegen {
 
             if match_rule.is_true() {
                 self.instructions.push(Instruction::IncrementCost);
+                self.variables = collect
+                    .iter()
+                    .map(|variable| self.variable_as_tuple(variable))
+                    .collect();
                 let done = self.build_term(rule.value.clone());
                 self.build_link(done);
                 self.build_collect(collect);
@@ -44,7 +46,11 @@ impl Codegen {
                 self.instr(Instruction::Return(Term::True));
             } else {
                 let mut then: Codegen = self.new_block(Instruction::IncrementCost);
-                self.build_constructor_patterns(&rule, &mut then.instructions);
+                then.build_constructor_patterns(&rule);
+                then.variables = collect
+                    .iter()
+                    .map(|variable| then.variable_as_tuple(variable))
+                    .collect();
                 let done = then.build_term(rule.value.clone());
                 then.build_link(done);
                 then.build_collect(collect);

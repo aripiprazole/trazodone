@@ -9,13 +9,14 @@ pub type FreeIndex = u64;
 pub type FreeArity = u64;
 pub type FreeVec = Vec<(FreeIndex, FreeArity)>;
 
+pub mod argument;
 pub mod binary;
-pub mod block;
 pub mod call;
 pub mod collect;
 pub mod deconstruct;
 pub mod free;
 pub mod graph;
+pub mod group;
 pub mod metadata;
 pub mod term;
 pub mod variable;
@@ -26,6 +27,7 @@ pub struct Codegen {
     variables: Vec<(String, Term)>,
     lambdas: FxHashMap<u64, String>,
     global: Box<GlobalContext>,
+    arguments: Vec<argument::Argument>,
 
     /// The name index is used to generate unique names for the variables
     name_index: u64,
@@ -49,6 +51,7 @@ impl Codegen {
         Self {
             global,
             name_index: 0,
+            arguments: Vec::new(),
             lambdas: FxHashMap::default(),
             variables: Vec::new(),
             instructions: Block::default(),
@@ -149,23 +152,24 @@ impl Codegen {
         name
     }
 
-    fn build_constructor_patterns(&mut self, rule: &Rule, then: &mut Block) {
+    fn build_constructor_patterns(&mut self, rule: &Rule) {
         let constructor_parameters = rule
             .parameters
             .iter()
             .enumerate()
             .filter(|parameter| matches!(parameter.1, Parameter::Constructor(..)));
-        for (index, parameter) in constructor_parameters {
+        for (argument, parameter) in constructor_parameters {
             let Parameter::Constructor(constructor) = parameter else {
                 continue;
             };
 
-            let argument = Term::reference(&format!("arg{}", index));
-
-            for (sub, _) in constructor.flatten_patterns.iter().enumerate() {
-                let term = Term::load_arg(argument.clone(), sub as u64);
-                let inst = Instruction::binding(&format!("arg{}_{}", index, sub), term);
-                then.block.push(inst);
+            for (index, _) in constructor.flatten_patterns.iter().enumerate() {
+                let name = self.fresh_name("pat");
+                let argument = self.get_argument(argument);
+                let term = Term::load_arg(argument.clone().unbox(), index as u64);
+                let instr = Instruction::binding(&name, term);
+                argument.add_field(Term::reference(&name));
+                self.instr(instr);
             }
         }
     }
@@ -173,6 +177,7 @@ impl Codegen {
     fn new_block(&self, instruction: Instruction) -> Self {
         Self {
             global: self.global.clone(),
+            arguments: self.arguments.clone(),
             name_index: self.name_index,
             variables: self.variables.clone(),
             lambdas: self.lambdas.clone(),

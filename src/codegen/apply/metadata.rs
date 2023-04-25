@@ -32,6 +32,7 @@ impl Codegen {
     fn new_empty_block(&self) -> Self {
         Self {
             global: self.global.clone(),
+            arguments: self.arguments.clone(),
             name_index: self.name_index,
             variables: self.variables.clone(),
             lambdas: self.lambdas.clone(),

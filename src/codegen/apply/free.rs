@@ -25,7 +25,7 @@ impl Codegen {
             .create_free(rule)
             .iter()
             .map(|(index, arity)| {
-                let argument = Term::reference(&format!("arg{index}"));
+                let argument = self.get_argument(*index as usize).unbox();
 
                 (Term::get_position(argument, 0), *arity)
             })
