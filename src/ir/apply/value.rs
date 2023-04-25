@@ -2,24 +2,6 @@ use crate::ir::apply::{FunctionId, Position, Term};
 use hvm::syntax::Oper;
 
 #[derive(Debug, Clone)]
-pub struct Color(pub u64);
-
-#[derive(Debug, Clone)]
-pub struct U60(pub u64);
-
-#[derive(Debug, Clone)]
-pub struct F60(pub f64);
-
-/// Represents a binary operation, with its operator and
-/// its operands.
-#[derive(Debug, Clone)]
-pub struct Binary {
-    pub lhs: Box<Term>,
-    pub op: Oper,
-    pub rhs: Box<Term>,
-}
-
-#[derive(Debug, Clone)]
 pub enum Value {
     /// Creates a [Tag::DUP0] value.
     Dp0(Color, Position),
@@ -59,6 +41,24 @@ pub enum Value {
 
     /// Creates an [Tag::ERASED] value.
     Erased,
+}
+
+#[derive(Debug, Clone)]
+pub struct Color(pub u64);
+
+#[derive(Debug, Clone)]
+pub struct U60(pub u64);
+
+#[derive(Debug, Clone)]
+pub struct F60(pub f64);
+
+/// Represents a binary operation, with its operator and
+/// its operands.
+#[derive(Debug, Clone)]
+pub struct Binary {
+    pub lhs: Box<Term>,
+    pub op: Oper,
+    pub rhs: Box<Term>,
 }
 
 impl Value {

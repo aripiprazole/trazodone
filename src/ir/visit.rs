@@ -4,6 +4,8 @@ pub type VisitBlock = BasicBlock<Instruction>;
 
 pub type ArgumentIndex = u64;
 
+/// An internal intermediate representation between HVM <-> LLVM, this is used to
+/// generate the visit functions.
 #[derive(Debug, Clone)]
 pub enum Instruction {
     /// Increases the vlen by the given [ArgumentIndex].

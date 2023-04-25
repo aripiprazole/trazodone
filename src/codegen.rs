@@ -35,17 +35,16 @@
 
 use std::collections::HashMap;
 
+use crate::ir::rule::RuleGroup;
+
 pub mod apply;
 pub mod reduce;
 pub mod syntax;
 pub mod visit;
 
 impl crate::ir::syntax::RuleGroup {
-    pub fn ir_codegen(
-        self,
-        context: Box<GlobalContext>,
-    ) -> apply::Result<crate::ir::rule::RuleGroup> {
-        Ok(crate::ir::rule::RuleGroup {
+    pub fn ir_codegen(self, context: Box<GlobalContext>) -> apply::Result<RuleGroup> {
+        Ok(RuleGroup {
             name: self.name.clone(),
             hvm_visit: visit::Codegen::default().build_visit(&self),
             hvm_apply: apply::Codegen::new(context).build_apply(&self)?,

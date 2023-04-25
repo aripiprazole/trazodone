@@ -20,10 +20,19 @@ pub mod tag;
 pub mod term;
 pub mod value;
 
+/// A block of HVM IR instructions. This can be converted to Control Flow Graph form
+/// and then to LLVM IR.
+///
+/// The IR is a list of instructions, each instruction is a [Instruction].
 #[derive(Default, Clone)]
 pub struct Block {
+    /// The HVM tags' ids that are used in this block.
     pub tags: Vec<(String, u64)>,
+
+    /// The HVM extensions' ids that are used in this block.
     pub extensions: Vec<(String, u64)>,
+
+    /// The actual IR
     pub block: Vec<Instruction>,
 }
 

@@ -2,6 +2,73 @@ use hvm::syntax::Oper;
 
 use crate::ir::apply::{Arity, Binary, Color, FunctionId, Position, Tag, Value, F60, U60};
 
+/// An internal intermediate representation construct that represents
+/// a value.
+#[derive(Debug, Clone)]
+pub enum Term {
+    /// Represents the current term in the reduce context.
+    Current,
+
+    /// Represents the id of a Tag, in a constant value.
+    Tag(Tag),
+
+    /// Gets the arity of the given term.
+    ArityOf(ArityOf),
+
+    TakeArgument(TakeArgument),
+    LoadArgument(LoadArgument),
+
+    /// Gets the extension of the given term.
+    GetExt(GetExt),
+
+    /// Gets the number of the given term.
+    GetNumber(GetNumber),
+
+    /// Gets the tag of the given term.
+    GetTag(GetTag),
+
+    /// Gets the position of the given term.
+    GetPosition(GetPosition),
+
+    /// Represents the creation of a HVM value, having the given [Value].
+    Create(Value),
+
+    /// Represents the allocation of a node in the HVM heap, having
+    /// the given arity.
+    Alloc(Alloc),
+
+    /// Represents the building of a HVM agent, its
+    /// composed by the [Term::alloc], that firsts allocates
+    /// the memory for the agent, and then followed by a series of
+    /// [Instruction::link], that link the arguments to the agent.
+    ///
+    /// Basically, this is a sugar syntax for better readability and debugging
+    /// purposes.
+    Agent(Agent),
+
+    //>>> Internal
+    /// Represents the id of an Extension, in a constant value.
+    Ext(u64, String),
+
+    //>>> Logical operations
+    Equal(Box<Term>, Box<Term>),
+    LogicalOr(Box<Term>, Box<Term>),
+    LogicalAnd(Box<Term>, Box<Term>),
+    //<<< Logical operations
+
+    //>>> Values
+    Ref(String),
+    True,
+    False,
+
+    /// Represents a not found atom, that is used to debug
+    /// purposes, it is not used in the HVM.
+    /// If it's encountered in the codegen, or evaluation,
+    /// it means that the compiler is not working properly.
+    NotFound(crate::ir::syntax::Atom),
+    //<<< Values
+}
+
 #[derive(Debug, Clone)]
 pub struct LoadArgument {
     pub term: Box<Term>,
@@ -49,68 +116,6 @@ pub struct ArityOf {
 pub struct Agent {
     pub arity: Arity,
     pub arguments: Vec<Term>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Term {
-    /// Represents the current term in the reduce context.
-    Current,
-
-    /// Represents the id of a Tag, in a constant value.
-    Tag(Tag),
-
-    /// Gets the arity of the given term.
-    ArityOf(ArityOf),
-
-    TakeArgument(TakeArgument),
-    LoadArgument(LoadArgument),
-
-    /// Gets the extension of the given term.
-    GetExt(GetExt),
-
-    /// Gets the number of the given term.
-    GetNumber(GetNumber),
-
-    /// Gets the tag of the given term.
-    GetTag(GetTag),
-
-    /// Gets the position of the given term.
-    GetPosition(GetPosition),
-
-    /// Represents the creation of a HVM value, having the given [Value].
-    Create(Value),
-
-    /// Represents the allocation of a node in the HVM heap, having
-    /// the given arity.
-    Alloc(Alloc),
-
-    /// Represents the building of a HVM agent, its
-    /// composed by the [Term::alloc], that firsts allocates
-    /// the memory for the agent, and then followed by a series of
-    /// [Instruction::link], that link the arguments to the agent.
-    Agent(Agent),
-
-    //>>> Internal
-    /// Represents the id of an Extension, in a constant value.
-    Ext(u64, String),
-
-    //>>> Logical operations
-    Equal(Box<Term>, Box<Term>),
-    LogicalOr(Box<Term>, Box<Term>),
-    LogicalAnd(Box<Term>, Box<Term>),
-    //<<< Logical operations
-
-    //>>> Values
-    Ref(String),
-    True,
-    False,
-
-    /// Represents a not found atom, that is used to debug
-    /// purposes, it is not used in the HVM.
-    /// If it's encountered in the codegen, or evaluation,
-    /// it means that the compiler is not working properly.
-    NotFound(crate::ir::syntax::Atom),
-    //<<< Values
 }
 
 impl Term {

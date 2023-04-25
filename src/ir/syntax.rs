@@ -1,6 +1,20 @@
 use hvm::syntax::Oper;
 
 #[derive(Debug, Clone)]
+pub enum Term {
+    U60(u64),
+    F60(f64),
+
+    Let(Let),
+    App(App),
+    Atom(Atom),
+    Duplicate(Duplicate),
+    Lam(Lam),
+    Super(Super),
+    Binary(Binary),
+}
+
+#[derive(Debug, Clone)]
 pub struct RuleGroup {
     pub name: String,
     pub strict_index: u64,
@@ -86,18 +100,4 @@ pub struct Atom {
     pub name: String,
     pub index: u64,
     pub field_index: Option<u64>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Term {
-    U60(u64),
-    F60(f64),
-
-    Let(Let),
-    App(App),
-    Atom(Atom),
-    Duplicate(Duplicate),
-    Lam(Lam),
-    Super(Super),
-    Binary(Binary),
 }
