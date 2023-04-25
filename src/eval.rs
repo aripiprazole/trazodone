@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use fxhash::FxHashMap;
 
 pub mod apply;
 pub mod graph;
@@ -18,7 +18,7 @@ pub struct Context {
     pub reduce: crate::runtime::ReduceContext,
 
     /// Local variables evaluation context.
-    pub variables: HashMap<String, Object>,
+    pub variables: FxHashMap<String, Object>,
 }
 
 /// The `Control` enum is used to control the evaluation of the HVM terms.
@@ -42,7 +42,7 @@ impl Context {
     pub fn new(reduce: crate::runtime::ReduceContext) -> Self {
         Self {
             reduce,
-            variables: HashMap::new(),
+            variables: FxHashMap::default(),
         }
     }
 }

@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
+use fxhash::FxHashMap;
 use hvm::rulebook::RuleBook;
 use hvm::{Precomp, PrecompFuns, ReduceCtx, PRECOMP};
 use itertools::Itertools;
@@ -12,12 +12,12 @@ use crate::llvm::execution::ExecutionEngine;
 
 type StrictMap = &'static [bool];
 
-pub fn setup_precomp(book: RuleBook, groups: HashMap<String, RuleGroup>) {
+pub fn setup_precomp(book: RuleBook, groups: FxHashMap<String, RuleGroup>) {
     let mut precomp = PRECOMP
         .clone()
         .iter()
         .map(|precomp| (precomp.id, precomp.clone()))
-        .collect::<HashMap<_, _>>();
+        .collect::<FxHashMap<_, _>>();
 
     unsafe {
         initialize_llvm();

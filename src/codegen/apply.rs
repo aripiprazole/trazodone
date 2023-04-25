@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use fxhash::FxHashMap;
 
 use crate::codegen::GlobalContext;
 use crate::ir::apply::*;
@@ -24,7 +24,7 @@ pub type Result<T> = std::result::Result<T, String>;
 
 pub struct Codegen {
     variables: Vec<(String, Term)>,
-    lambdas: HashMap<u64, String>,
+    lambdas: FxHashMap<u64, String>,
     global: Box<GlobalContext>,
 
     /// The name index is used to generate unique names for the variables
@@ -36,11 +36,11 @@ pub struct Codegen {
     //>>>Constants section
     /// The extensions that are used in this codegen, to be displayed in the
     /// generated code/pretty print for debugging purposes.
-    constant_extensions: HashMap<String, u64>,
+    constant_extensions: FxHashMap<String, u64>,
 
     /// The tags that are used in this codegen, to be displayed in the
     /// generated code/pretty print for debugging purposes.
-    constant_tags: HashMap<String, u64>,
+    constant_tags: FxHashMap<String, u64>,
     //<<<Constants section
 }
 
@@ -49,12 +49,12 @@ impl Codegen {
         Self {
             global,
             name_index: 0,
-            lambdas: HashMap::new(),
+            lambdas: FxHashMap::default(),
             variables: Vec::new(),
             instructions: Block::default(),
             // constant sections
-            constant_tags: HashMap::new(),
-            constant_extensions: HashMap::new(),
+            constant_tags: FxHashMap::default(),
+            constant_extensions: FxHashMap::default(),
         }
     }
 

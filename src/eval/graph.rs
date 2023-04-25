@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::graph::{BasicBlock, HasTerm, Label, Terminator};
 
@@ -11,12 +9,6 @@ where
     type Output = Control;
 
     fn eval(self, context: &mut Context) -> Self::Output {
-        let blocks = self
-            .declared_blocks
-            .iter()
-            .map(|bb| (bb.label.clone(), bb.clone()))
-            .collect::<HashMap<_, _>>();
-
         for instruction in self.instructions {
             instruction.eval(context);
         }
@@ -31,7 +23,8 @@ where
             }
             Terminator::Return(value) => Control::Break(value.eval(context)),
             Terminator::Jump(Label(label)) => {
-                let branch = blocks
+                let branch = self
+                    .declared_blocks
                     .get(&label)
                     .expect("could not find then branch")
                     .clone();
@@ -43,11 +36,13 @@ where
                 Control::Break(value)
             }
             Terminator::Cond(cond, Label(then), Label(otherwise)) => {
-                let then = blocks
+                let then = self
+                    .declared_blocks
                     .get(&then)
                     .expect("could not find then branch.")
                     .clone();
-                let otherwise = blocks
+                let otherwise = self
+                    .declared_blocks
                     .get(&otherwise)
                     .expect("could not find otherwise branch.")
                     .clone();

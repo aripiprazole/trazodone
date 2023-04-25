@@ -8,7 +8,7 @@ where
     I::Term: Display,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for declared_block in self.declared_blocks.iter() {
+        for declared_block in self.declared_blocks.values() {
             writeln!(f, "{declared_block}")?;
         }
 

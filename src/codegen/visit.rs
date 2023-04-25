@@ -6,7 +6,7 @@ use crate::ir::visit::{Instruction, Term, VisitBlock};
 
 #[derive(Default, Debug, Clone)]
 pub struct Codegen {
-    pub basic_blocks: Vec<VisitBlock>,
+    pub basic_blocks: Vec<(String, VisitBlock)>,
     pub instructions: VisitBlock,
 }
 
@@ -58,7 +58,7 @@ impl Codegen {
     {
         let mut bb = BasicBlock::new(name);
         f(self, &mut bb);
-        self.basic_blocks.push(bb);
-        self.basic_blocks.last().unwrap().clone()
+        self.basic_blocks.push((name.into(), bb.clone()));
+        bb
     }
 }

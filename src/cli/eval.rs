@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use clap::error::ErrorKind;
 use clap::CommandFactory;
 use colored::Colorize;
+use fxhash::FxHashMap;
 use hvm::rulebook::RuleBook;
 use ErrorKind::InvalidValue;
 
@@ -85,7 +84,7 @@ fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {
     global
 }
 
-fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> HashMap<String, RuleGroup> {
+fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> FxHashMap<String, RuleGroup> {
     book.clone()
         .transform()
         .unwrap()

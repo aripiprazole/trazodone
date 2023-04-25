@@ -100,6 +100,7 @@ impl Context {
                     bb.terminator = Terminator::Return(value);
                 }
                 Instruction::If(if_instruction) => {
+                    let declared_blocks = &mut bb.declared_blocks;
                     let then = self.control_flow_graph(if_instruction.then);
 
                     // use `otherwise` as the remaining code
@@ -114,15 +115,14 @@ impl Context {
                         Label::new(&otherwise),
                     );
 
-                    bb.declared_blocks.push(then);
-                    bb.declared_blocks.push(otherwise);
+                    declared_blocks.insert(then.label.clone(), then);
+                    declared_blocks.insert(otherwise.label.clone(), otherwise);
                     break;
                 }
                 instruction => bb.instructions.push(instruction),
             }
         }
         bb
-
     }
 }
 

@@ -33,7 +33,7 @@
 //!     TODO: Everything on reduce stage
 //!
 
-use std::collections::HashMap;
+use fxhash::FxHashMap;
 
 use crate::ir::rule::RuleGroup;
 
@@ -66,7 +66,7 @@ pub fn build_name(name: &str) -> String {
 pub struct GlobalContext {
     pub name_index: u64,
     /// The constructor name -> id, binding map.
-    pub constructors: HashMap<String, u64>,
+    pub constructors: FxHashMap<String, u64>,
 }
 
 impl Default for GlobalContext {
@@ -78,7 +78,7 @@ impl Default for GlobalContext {
             /// The current name index: 29, is defined by the hvm file. Defined
             /// on the HVM github repository.
             name_index: 29, // hvm
-            constructors: HashMap::new(),
+            constructors: FxHashMap::default(),
         }
     }
 }
