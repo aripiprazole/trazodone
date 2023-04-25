@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use rand::Rng;
 
 use crate::ir::apply::{Block, Instruction, Term};
 use crate::ir::graph::{BasicBlock, HasTerm, Label, Terminator};
@@ -35,41 +34,10 @@ impl Block {
     ///   cond a @bb_1 @bb_2
     /// ```
     pub fn into_control_flow_graph(self) -> BasicBlock<Instruction> {
-        // Generates a random id for the basic block
-        // to avoid name collisions.
-        let id = rand::thread_rng().gen::<u16>();
-        let mut bb = BasicBlock::new(&format!("bb_{id}"));
-        let instructions = self.block.iter().cloned().flat_map(flatten_instruction);
-
-        for (id, instruction) in instructions.clone().enumerate() {
-            match instruction {
-                Instruction::Return(value) => {
-                    bb.terminator = Terminator::Return(value);
-                }
-                Instruction::If(if_instruction) => {
-                    let then = if_instruction.then.into_control_flow_graph();
-
-                    // use `otherwise` as the remaining code
-                    let mut otherwise = if_instruction.otherwise.unwrap_or_default();
-                    otherwise.block.extend(instructions.dropping(id + 1));
-
-                    //
-                    let otherwise = otherwise.into_control_flow_graph();
-
-                    bb.terminator = Terminator::Cond(
-                        if_instruction.condition,
-                        Label::new(&then),
-                        Label::new(&otherwise),
-                    );
-
-                    bb.declared_blocks.push(then);
-                    bb.declared_blocks.push(otherwise);
-                    break;
-                }
-                instruction => bb.instructions.push(instruction),
-            }
-        }
-        bb
+        // The entry block is always called `entry`
+        let mut entry_bb = Context::default().control_flow_graph(self);
+        entry_bb.label = "entry".into();
+        entry_bb
     }
 }
 
@@ -105,6 +73,56 @@ pub fn flatten_instruction(instruction: Instruction) -> Vec<Instruction> {
             .flat_map(flatten_instruction)
             .collect(),
         instruction => vec![instruction],
+    }
+}
+
+#[derive(Default)]
+struct Context {
+    /// The current block, this is used to generate the basic block name.
+    /// E.g.: `bb_1`, `bb_2`, `bb_3`, ...
+    pub name_index: usize,
+}
+
+impl Context {
+    /// Internal function to convert a block into a control flow graph.
+    ///
+    /// [Block::into_control_flow_graph]
+    fn control_flow_graph(&mut self, apply: Block) -> BasicBlock<Instruction> {
+        let id = self.name_index;
+        self.name_index += 1;
+
+        let mut bb = BasicBlock::new(&format!("bb_{id}"));
+        let instructions = apply.block.iter().cloned().flat_map(flatten_instruction);
+
+        for (id, instruction) in instructions.clone().enumerate() {
+            match instruction {
+                Instruction::Return(value) => {
+                    bb.terminator = Terminator::Return(value);
+                }
+                Instruction::If(if_instruction) => {
+                    let then = self.control_flow_graph(if_instruction.then);
+
+                    // use `otherwise` as the remaining code
+                    let mut otherwise = if_instruction.otherwise.unwrap_or_default();
+                    otherwise.block.extend(instructions.dropping(id + 1));
+
+                    let otherwise = self.control_flow_graph(otherwise);
+
+                    bb.terminator = Terminator::Cond(
+                        if_instruction.condition,
+                        Label::new(&then),
+                        Label::new(&otherwise),
+                    );
+
+                    bb.declared_blocks.push(then);
+                    bb.declared_blocks.push(otherwise);
+                    break;
+                }
+                instruction => bb.instructions.push(instruction),
+            }
+        }
+        bb
+
     }
 }
 
