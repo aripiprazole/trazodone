@@ -7,7 +7,7 @@ use crate::llvm::apply::Codegen;
 pub type ApplyFn = unsafe extern "C" fn(*mut libc::c_void) -> bool;
 
 impl<'a> Codegen<'a> {
-    pub fn build_apply_function(&self, rule: &RuleGroup, bb: ApplyBasicBlock) -> String {
+    pub fn build_apply_function(&mut self, rule: &RuleGroup, bb: ApplyBasicBlock) -> String {
         // Function signature: <<name>>__apply(%ctx: *mut <<reduce_ctx>>) -> i1
         let function_type = self.context.bool_type().fn_type(
             &[self
@@ -26,6 +26,7 @@ impl<'a> Codegen<'a> {
 
         // Build entry
         println!("DEBUG: {bb}"); // TODO: remove me
+        self.ctx = Some(ctx);
         self.build_basic_block(function, bb);
 
         // Verify the function integrity

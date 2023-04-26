@@ -1,8 +1,10 @@
 use std::error::Error;
+use fxhash::FxHashMap;
 
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
+use inkwell::values::BasicValueEnum;
 
 pub mod main;
 pub mod bb;
@@ -12,6 +14,17 @@ pub struct Codegen<'a> {
     pub context: &'a Context,
     pub module: Module<'a>,
     pub builder: Builder<'a>,
+
+    //>>>Contextual stuff
+    /// The current function let bound names
+    pub names: FxHashMap<String, BasicValueEnum<'a>>,
+
+    /// The context parameter for the apply function
+    pub ctx: Option<inkwell::values::BasicValueEnum<'a>>,
+
+    /// The current basic block
+    pub bb: Option<inkwell::basic_block::BasicBlock<'a>>,
+    //<<<
 }
 
 impl<'a> Codegen<'a> {
@@ -21,6 +34,10 @@ impl<'a> Codegen<'a> {
             context,
             module,
             builder: context.create_builder(),
+
+            names: FxHashMap::default(),
+            ctx: None,
+            bb: None,
         };
 
         Ok(codegen)
@@ -39,7 +56,7 @@ mod tests {
     pub fn it_works() {
         let book = setup_book();
         let context = Context::create();
-        let codegen = Codegen::new(&context).unwrap();
+        let mut codegen = Codegen::new(&context).unwrap();
 
         let add_fn = book.get("Add").unwrap();
         let add_fn_ir = add_fn.hvm_apply.clone().into_control_flow_graph();

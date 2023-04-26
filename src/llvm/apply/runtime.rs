@@ -1,4 +1,5 @@
 use inkwell::module::Linkage;
+use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum};
 use inkwell::AddressSpace;
 
 use crate::llvm::apply::Codegen;
@@ -46,5 +47,24 @@ impl<'a> Codegen<'a> {
             ),
             Some(Linkage::External),
         );
+    }
+
+    pub fn call_std<'b>(
+        &'b self,
+        name: &str,
+        args: &[BasicMetadataValueEnum<'b>],
+    ) -> BasicValueEnum<'b> {
+        let mut complete_args: Vec<BasicMetadataValueEnum> = vec![self.ctx.unwrap().into()];
+        complete_args.extend_from_slice(args);
+
+        self.builder
+            .build_direct_call(
+                self.module.get_function(name).unwrap(),
+                complete_args.as_ref(),
+                "",
+            )
+            .try_as_basic_value()
+            .left()
+            .unwrap()
     }
 }
