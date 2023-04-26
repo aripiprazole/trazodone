@@ -9,6 +9,7 @@ pub use position::*;
 pub use tag::*;
 pub use term::*;
 pub use value::*;
+use crate::ir::graph::BasicBlock;
 
 pub mod arity;
 pub mod function_id;
@@ -19,6 +20,8 @@ pub mod position;
 pub mod tag;
 pub mod term;
 pub mod value;
+
+pub type ApplyBasicBlock = BasicBlock<Instruction>;
 
 /// A block of HVM IR instructions. This can be converted to Control Flow Graph form
 /// and then to LLVM IR.

@@ -53,6 +53,30 @@ pub fn run_eval(args: EvalArgs) {
     }
 }
 
+pub(crate) fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {
+    let mut id_to_name = book.id_to_name.clone();
+    id_to_name.remove(book.name_to_id.get("Main").unwrap());
+
+    let mut global: Box<GlobalContext> = Box::default();
+    for (id, name) in itertools::sorted(id_to_name.iter()) {
+        global.constructors.insert(name.clone(), *id);
+    }
+
+    global
+}
+
+pub(crate) fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> FxHashMap<String, RuleGroup> {
+    book.clone()
+        .transform()
+        .unwrap()
+        .iter()
+        .map(|group| {
+            let name = group.name.clone();
+            (name, group.clone().ir_codegen(global.clone()).unwrap())
+        })
+        .collect()
+}
+
 fn setup_eval_environment(code: &str) {
     let mut cli = Cli::command();
     let file = match hvm::language::syntax::read_file(code) {
@@ -70,28 +94,4 @@ fn setup_eval_environment(code: &str) {
     let groups = ir_codegen_book(&book, global);
 
     crate::hvm::setup_precomp(book, groups);
-}
-
-fn setup_global_context(book: &RuleBook) -> Box<GlobalContext> {
-    let mut id_to_name = book.id_to_name.clone();
-    id_to_name.remove(book.name_to_id.get("Main").unwrap());
-
-    let mut global: Box<GlobalContext> = Box::default();
-    for (id, name) in itertools::sorted(id_to_name.iter()) {
-        global.constructors.insert(name.clone(), *id);
-    }
-
-    global
-}
-
-fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> FxHashMap<String, RuleGroup> {
-    book.clone()
-        .transform()
-        .unwrap()
-        .iter()
-        .map(|group| {
-            let name = group.name.clone();
-            (name, group.clone().ir_codegen(global.clone()).unwrap())
-        })
-        .collect()
 }
