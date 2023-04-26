@@ -5,6 +5,8 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 
 pub mod main;
+pub mod bb;
+pub mod runtime;
 
 pub struct Codegen<'a> {
     pub context: &'a Context,
@@ -14,7 +16,7 @@ pub struct Codegen<'a> {
 
 impl<'a> Codegen<'a> {
     pub fn new(context: &'a Context) -> Result<Self, Box<dyn Error>> {
-        let module = context.create_module("sum");
+        let module = context.create_module("HVM");
         let codegen = Codegen {
             context,
             module,
@@ -42,6 +44,7 @@ mod tests {
         let add_fn = book.get("Add").unwrap();
         let add_fn_ir = add_fn.hvm_apply.clone().into_control_flow_graph();
 
+        codegen.initialize_std_functions();
         codegen.build_apply_function(add_fn, add_fn_ir);
 
         let _execution_engine = codegen
