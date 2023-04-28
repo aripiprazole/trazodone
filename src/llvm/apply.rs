@@ -8,6 +8,7 @@ use inkwell::module::Module;
 use inkwell::values::BasicValueEnum;
 
 pub mod bb;
+pub mod functions;
 pub mod instruction;
 pub mod main;
 pub mod runtime;
