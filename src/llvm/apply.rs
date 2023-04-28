@@ -1,4 +1,5 @@
 use std::error::Error;
+
 use fxhash::FxHashMap;
 
 use inkwell::builder::Builder;
@@ -6,8 +7,8 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::values::BasicValueEnum;
 
-pub mod main;
 pub mod bb;
+pub mod main;
 pub mod runtime;
 
 pub struct Codegen<'a> {
@@ -46,11 +47,11 @@ impl<'a> Codegen<'a> {
 
 #[cfg(test)]
 mod tests {
-    use fxhash::FxHashMap;
-    use inkwell::OptimizationLevel;
+    use super::*;
     use crate::cli::eval::{ir_codegen_book, setup_global_context};
     use crate::ir::rule::RuleGroup;
-    use super::*;
+    use fxhash::FxHashMap;
+    use inkwell::OptimizationLevel;
 
     #[test]
     pub fn it_works() {

@@ -11,6 +11,24 @@ pub type Host = *mut u64;
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__llvm_eq(a: u64, b: u64) -> bool {
+    a == b
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__llvm_or(a: bool, b: bool) -> bool {
+    a || b
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__llvm_and(a: bool, b: bool) -> bool {
+    a && b
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn hvm__increment_cost(ctx: ReduceContext) {
     let ctx = get_context(ctx);
 
