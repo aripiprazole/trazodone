@@ -8,8 +8,12 @@ use inkwell::module::Module;
 use inkwell::values::BasicValueEnum;
 
 pub mod bb;
+pub mod instruction;
 pub mod main;
 pub mod runtime;
+pub mod term;
+pub mod terminator;
+pub mod value;
 
 pub struct Codegen<'a> {
     pub context: &'a Context,
@@ -27,6 +31,14 @@ pub struct Codegen<'a> {
     pub bb: Option<inkwell::basic_block::BasicBlock<'a>>,
     //<<<
 }
+
+macro_rules! erased_step {
+    ($name:path) => {
+        panic!("Erased step {}. Unreachable", stringify!($name))
+    };
+}
+
+pub(crate) use erased_step;
 
 impl<'a> Codegen<'a> {
     pub fn new(context: &'a Context) -> Result<Self, Box<dyn Error>> {
