@@ -3,8 +3,6 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::AddressSpace;
-use llvm_sys::execution_engine::LLVMLinkInMCJIT;
-use llvm_sys::target::{LLVM_InitializeNativeAsmPrinter, LLVM_InitializeNativeTarget};
 
 use crate::ir::rule::RuleGroup;
 
@@ -130,17 +128,12 @@ impl<'a> Bridge<'a> {
     }
 }
 
-pub unsafe fn initialize_llvm() {
-    LLVMLinkInMCJIT();
-    LLVM_InitializeNativeTarget();
-    LLVM_InitializeNativeAsmPrinter();
-}
-
 #[cfg(test)]
 mod tests {
     use std::mem::transmute;
     use std::ptr::null_mut;
 
+    use inkwell::targets::{InitializationConfig, Target};
     use inkwell::OptimizationLevel;
 
     use super::*;
@@ -157,7 +150,7 @@ mod tests {
     #[test]
     fn it_works() {
         unsafe {
-            initialize_llvm();
+            Target::initialize_native(&InitializationConfig::default()).unwrap();
 
             let context = Context::create();
             let bridge = Bridge::new(&context);

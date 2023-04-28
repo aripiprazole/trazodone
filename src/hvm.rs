@@ -3,12 +3,13 @@ use std::sync::Arc;
 use fxhash::FxHashMap;
 use hvm::rulebook::RuleBook;
 use hvm::{Precomp, PrecompFuns, ReduceCtx, PRECOMP};
+use inkwell::targets::{InitializationConfig, Target};
 use inkwell::OptimizationLevel;
 use itertools::Itertools;
 
 use crate::eval::{Context, Control, Eval};
 use crate::ir::rule::RuleGroup;
-use crate::llvm::bridge::{initialize_llvm, Bridge};
+use crate::llvm::bridge::Bridge;
 
 type StrictMap = &'static [bool];
 
@@ -19,9 +20,7 @@ pub fn setup_precomp(book: RuleBook, groups: FxHashMap<String, RuleGroup>) {
         .map(|precomp| (precomp.id, precomp.clone()))
         .collect::<FxHashMap<_, _>>();
 
-    unsafe {
-        initialize_llvm();
-    }
+    Target::initialize_native(&InitializationConfig::default()).unwrap();
 
     for (id, name) in itertools::sorted(book.id_to_name.iter()) {
         let smap = book.id_to_smap.get(id).unwrap().clone().leak();
