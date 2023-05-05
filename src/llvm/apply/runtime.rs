@@ -1,11 +1,11 @@
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, InstructionValue};
 
-use crate::llvm::apply::functions::std_function;
+use crate::llvm::apply::functions::{build_std_functions, std_function};
 use crate::llvm::apply::Codegen;
 
 impl<'a> Codegen<'a> {
     pub fn initialize_std_functions(&self) {
-        std_function!(self, {
+        build_std_functions!(self, {
             hvm__increment_cost(ctx) -> void,
             hvm__get_term(ctx) -> u64,
             hvm__load_argument(ctx, u64, u64) -> u64,
@@ -18,6 +18,22 @@ impl<'a> Codegen<'a> {
             hvm__llvm_or(bool, bool) -> bool,
             hvm__llvm_and(bool, bool) -> bool,
         });
+    }
+
+    std_function! { hvm__increment_cost(ctx) -> void }
+    std_function! { hvm__get_term(ctx) -> u64 }
+    std_function! { hvm__load_argument(ctx, a, b) -> u64 }
+    std_function! { hvm__get_loc(a, b) -> u64 }
+    std_function! { hvm__get_ext(a) -> u64 }
+    std_function! { hvm__get_number(a) -> u64 }
+    std_function! { hvm__get_tag(a) -> u64 }
+    std_function! { hvm__alloc(ctx, a) -> u64 }
+    std_function! { hvm__llvm_eq(a, b) -> u64 }
+    std_function! { hvm__llvm_or(a, b) -> u64 }
+    std_function! { hvm__llvm_and(a, b) -> u64 }
+
+    pub fn u64(&self, value: u64) -> BasicValueEnum {
+        self.context.i64_type().const_int(value, false).into()
     }
 
     /// Call a function from the HVM runtime, that passes the context as the first argument.
