@@ -1,7 +1,7 @@
 use core::slice::SlicePattern;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use hvm::ReduceCtx;
+use hvm::{Ptr, ReduceCtx};
 
 pub type ReduceContext = *mut ReduceCtx<'static>;
 pub type Pointer = u64;
@@ -41,6 +41,14 @@ pub unsafe extern "C" fn hvm__get_host(ctx: ReduceContext) -> Host {
     let ctx = get_context(ctx);
 
     ctx.host
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn hvm__get_host_value(ctx: ReduceContext) -> Ptr {
+    let ctx = get_context(ctx);
+
+    *ctx.host
 }
 
 #[no_mangle]

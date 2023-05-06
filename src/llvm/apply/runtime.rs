@@ -18,6 +18,7 @@ impl<'a> Codegen<'a> {
             hvm__create_erased() -> u64,
 
             // std functions
+            hvm__get_host_value(ctx) -> u64,
             hvm__increment_cost(ctx) -> void,
             hvm__get_term(ctx) -> u64,
             hvm__link(ctx, u64, u64) -> u64,
@@ -43,6 +44,7 @@ impl<'a> Codegen<'a> {
     std_function! { hvm__create_binary(operand, position) -> u64 }
     std_function! { hvm__create_erased() -> u64 }
 
+    std_function! { hvm__get_host_value(ctx) -> u64 }
     std_function! { hvm__increment_cost(ctx) -> void }
     std_function! { hvm__get_term(ctx) -> u64 }
     std_function! { hvm__load_argument(ctx, a, b) -> u64 }

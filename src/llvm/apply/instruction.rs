@@ -11,8 +11,14 @@ impl<'a> Codegen<'a> {
 
             Instruction::Collect(_) => {}
             Instruction::Free(_free_instruction) => {}
-            Instruction::Link(_link_instruction) => {}
             Instruction::Term(_term_instruction) => {}
+
+            Instruction::Link(link_instruction) => {
+                let position = self.build_position(link_instruction.position);
+                let term = self.build_term(link_instruction.term);
+
+                self.hvm__link(position, term);
+            }
 
             Instruction::Let(let_instruction) => {
                 let name = format!("let.{}", let_instruction.name);
