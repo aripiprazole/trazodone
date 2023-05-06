@@ -1,4 +1,4 @@
-use crate::ir::apply::Instruction;
+use crate::ir::apply::{Instruction, Let, Link};
 
 use super::Codegen;
 
@@ -6,29 +6,16 @@ impl<'a> Codegen<'a> {
     pub fn build_instruction(&mut self, instruction: Instruction) {
         match instruction {
             Instruction::IncrementCost => {
-                self.call_void_std("hvm__increment_cost", &[]);
+                self.hvm__increment_cost();
+            }
+            Instruction::Term(term) => {
+                self.build_term(term);
             }
 
-            Instruction::Collect(_) => {}
+            Instruction::Collect(_collect_instruction) => {}
             Instruction::Free(_free_instruction) => {}
-            Instruction::Term(_term_instruction) => {}
-
-            Instruction::Link(link_instruction) => {
-                let position = self.build_position(link_instruction.position);
-                let term = self.build_term(link_instruction.term);
-
-                self.hvm__link(position, term);
-            }
-
-            Instruction::Let(let_instruction) => {
-                let name = format!("let.{}", let_instruction.name);
-                let ptr = self.builder.build_alloca(self.context.i64_type(), &name);
-
-                self.names.insert(let_instruction.name, ptr.into());
-
-                self.builder
-                    .build_store(ptr, self.build_term(let_instruction.value));
-            }
+            Instruction::Link(link_instruction) => self.build_link(link_instruction),
+            Instruction::Let(let_instruction) => self.build_let(let_instruction),
 
             Instruction::Println(_message) => {
                 todo!("Instruction::Println")
@@ -39,5 +26,22 @@ impl<'a> Codegen<'a> {
                 super::erased_step!(Instruction::Return)
             }
         }
+    }
+
+    pub fn build_link(&mut self, instruction: Link) {
+        let position = self.build_position(instruction.position);
+        let term = self.build_term(instruction.term);
+
+        self.hvm__link(position, term);
+    }
+
+    pub fn build_let(&mut self, instruction: Let) {
+        let name = format!("let.{}", instruction.name);
+        let ptr = self.builder.build_alloca(self.context.i64_type(), &name);
+
+        self.names.insert(instruction.name, ptr.into());
+
+        self.builder
+            .build_store(ptr, self.build_term(instruction.value));
     }
 }
