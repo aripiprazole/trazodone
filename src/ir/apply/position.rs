@@ -1,13 +1,3 @@
-/// Represents an operation with a variable number of arguments.
-#[derive(Debug, Clone)]
-pub enum Op {
-    Constant(u64),
-    Sum(Box<Op>, Box<Op>),
-    Sub(Box<Op>, Box<Op>),
-    Mul(Box<Op>, Box<Op>),
-    Div(Box<Op>, Box<Op>),
-}
-
 /// Represents the position of a term in the HVM heap.
 #[derive(Debug, Clone)]
 pub enum Position {
@@ -15,7 +5,7 @@ pub enum Position {
     /// where the gate is identified by its name and index.
     Named {
         reference_name: String,
-        gate_index: Op,
+        gate_index: u64,
     },
     /// A host position, the position is relative to the context's host.
     Host,
@@ -26,18 +16,10 @@ impl Position {
     pub fn new(reference_name: &str, gate_index: u64) -> Self {
         Self::Named {
             reference_name: reference_name.into(),
-            gate_index: Op::Constant(gate_index),
-        }
-    }
-
-    /// Creates a new named position with the given name and index operation.
-    pub fn binary(reference_name: &str, gate_index: Op) -> Self {
-        Self::Named {
-            reference_name: reference_name.into(),
             gate_index,
         }
     }
-
+    
     /// Creates a new named position with the initial gate index.
     pub fn initial(reference_name: &str) -> Self {
         Self::new(reference_name, 0)

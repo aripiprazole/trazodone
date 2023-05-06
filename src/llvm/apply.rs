@@ -16,6 +16,7 @@ pub mod term;
 pub mod terminator;
 pub mod value;
 pub mod agent;
+pub mod position;
 
 pub struct Codegen<'a> {
     pub context: &'a Context,

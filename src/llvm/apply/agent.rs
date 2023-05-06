@@ -11,8 +11,17 @@ impl<'a> Codegen<'a> {
     /// a [Term::alloc] and [Instruction::link] anyway.
     pub fn build_agent(&self, agent: Agent) -> BasicValueEnum {
         let value = self.hvm__alloc(self.u64(agent.arity));
-        let alloca = self.builder.build_alloca(value.get_type(), "");
-        self.builder.build_store(alloca, value);
-        self.builder.build_load(self.context.i64_type(), alloca, "")
+
+        for (index, argument) in agent.arguments.iter().enumerate() {
+            let argument = self.build_term(argument.clone());
+            let index = self.u64(index as u64);
+            // Adds, to the index, the value of the agent.
+            let llvm_index =
+                self.builder
+                    .build_int_add(value.into_int_value(), index.into_int_value(), "");
+            self.hvm__link(llvm_index.into(), argument);
+        }
+
+        value
     }
 }

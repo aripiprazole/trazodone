@@ -17,7 +17,11 @@ impl<'a> Codegen<'a> {
             Value::Binary(_, _) => todo!(),
             Value::U60(_) => todo!(),
             Value::F60(_) => todo!(),
-            Value::Function(_, _) => todo!(),
+            Value::Function(fn_id, position) => {
+                let fn_id = self.u64(fn_id.1);
+                let position = self.build_position(position);
+                self.hvm__create_function(fn_id, position)
+            }
             Value::Constructor(_, _) => todo!(),
             Value::Erased => todo!(),
         }

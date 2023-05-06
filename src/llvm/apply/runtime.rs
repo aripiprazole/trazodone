@@ -6,8 +6,13 @@ use crate::llvm::apply::Codegen;
 impl<'a> Codegen<'a> {
     pub fn initialize_std_functions(&self) {
         build_std_functions!(self, {
+            // create functions
+            hvm__create_function(u64, u64) -> u64,
+
+            // std functions
             hvm__increment_cost(ctx) -> void,
             hvm__get_term(ctx) -> u64,
+            hvm__link(ctx, u64, u64) -> u64,
             hvm__load_argument(ctx, u64, u64) -> u64,
             hvm__get_loc(u64, u64) -> u64,
             hvm__get_ext(u64) -> u64,
@@ -19,10 +24,13 @@ impl<'a> Codegen<'a> {
             hvm__llvm_and(bool, bool) -> bool,
         });
     }
+    
+    std_function! { hvm__create_function(fn_id, ptr) -> u64 }
 
     std_function! { hvm__increment_cost(ctx) -> void }
     std_function! { hvm__get_term(ctx) -> u64 }
     std_function! { hvm__load_argument(ctx, a, b) -> u64 }
+    std_function! { hvm__link(ctx, position, ptr) -> u64 }
     std_function! { hvm__get_loc(a, b) -> u64 }
     std_function! { hvm__get_ext(a) -> u64 }
     std_function! { hvm__get_number(a) -> u64 }

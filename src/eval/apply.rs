@@ -1,7 +1,7 @@
 use crate::eval::{Context, Control, Eval, Object};
 use crate::ir::apply::{
     build_binary_op, Agent, Alloc, Block, Free, FunctionId, GetExt, GetNumber, GetPosition, GetTag,
-    If, Instruction, Let, Link, LoadArgument, Op, Position, Tag, Term, Value, U60,
+    If, Instruction, Let, Link, LoadArgument, Position, Tag, Term, Value, U60,
 };
 use crate::runtime::{
     hvm__alloc, hvm__create_app, hvm__create_binary, hvm__create_constructor, hvm__create_erased,
@@ -26,24 +26,10 @@ impl Eval for Position {
                         .unwrap_or_else(|| panic!("unknown {reference_name}"))
                         .as_u64();
 
-                    n + gate_index.eval(context)
+                    n + gate_index
                 }
                 Position::Host => *hvm__get_host(context.reduce),
             }
-        }
-    }
-}
-
-impl Eval for Op {
-    type Output = u64;
-
-    fn eval(self, context: &mut Context) -> Self::Output {
-        match self {
-            Op::Constant(value) => value,
-            Op::Sum(a, b) => a.eval(context) + b.eval(context),
-            Op::Sub(a, b) => a.eval(context) + b.eval(context),
-            Op::Mul(a, b) => a.eval(context) + b.eval(context),
-            Op::Div(a, b) => a.eval(context) + b.eval(context),
         }
     }
 }
