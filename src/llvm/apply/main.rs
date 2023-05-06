@@ -18,8 +18,7 @@ impl<'a> Codegen<'a> {
             false,
         );
 
-        let name = format!("{}__apply", rule.name);
-
+        let name = self.create_mangled_name(rule);
         let function = self.module.add_function(&name, function_type, None);
         let ctx = function.get_first_param().expect("No ctx parameter found");
         ctx.set_name("ctx");
@@ -33,5 +32,11 @@ impl<'a> Codegen<'a> {
         function.verify(true);
 
         name
+    }
+
+    pub fn create_mangled_name(&mut self, rule: &RuleGroup) -> String {
+        let hash = format!("{:x}", fxhash::hash64(&rule.name));
+        let hash = hash[0..8].to_string();
+        format!("_HA{}{}{hash}", rule.name.len(), rule.name)
     }
 }
