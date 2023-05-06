@@ -20,11 +20,11 @@ macro_rules! std_llvm_type {
 }
 
 macro_rules! build_std_functions {
-    ($codegen:expr, {$($name:ident($($x:tt),+ $(,)?) -> $ret:tt),+ $(,)?}) => {{
+    ($codegen:expr, {$($name:ident($($x:tt),* $(,)?) -> $ret:tt),+ $(,)?}) => {{
         $({
             let name = stringify!($name);
             let ret = crate::llvm::apply::functions::std_llvm_type!($codegen, $ret);
-            let args = &[$(crate::llvm::apply::functions::std_llvm_type!($codegen, $x).into()),+];
+            let args = &[$(crate::llvm::apply::functions::std_llvm_type!($codegen, $x).into()),*];
             $codegen.module.add_function(name, ret.fn_type(args, false), None);
         })+
     }};
@@ -61,11 +61,11 @@ macro_rules! std_function {
             self.call_void_std(stringify!($name), arguments)
         }
     };
-    ($name:ident($($argsn:ident), + $(,)?) -> u64) => {
+    ($name:ident($($argsn:ident), * $(,)?) -> u64) => {
         #[allow(clippy::needless_lifetimes)]
         #[allow(non_snake_case)]
-        pub fn $name<'b>(&'b self, $($argsn: inkwell::values::BasicValueEnum<'b>),+) -> inkwell::values::BasicValueEnum<'b> {
-            let arguments = &[$($argsn.into()),+];
+        pub fn $name<'b>(&'b self, $($argsn: inkwell::values::BasicValueEnum<'b>),*) -> inkwell::values::BasicValueEnum<'b> {
+            let arguments = &[$($argsn.into()),*];
             self.call_direct(stringify!($name), arguments)
         }
     };

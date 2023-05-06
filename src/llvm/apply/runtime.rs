@@ -8,6 +8,14 @@ impl<'a> Codegen<'a> {
         build_std_functions!(self, {
             // create functions
             hvm__create_function(u64, u64) -> u64,
+            hvm__create_constructor(u64, u64) -> u64,
+            hvm__create_app(u64) -> u64,
+            hvm__create_var(u64) -> u64,
+            hvm__create_lam(u64) -> u64,
+            hvm__create_f60(u64) -> u64,
+            hvm__create_u60(u64) -> u64,
+            hvm__create_binary(u64, u64) -> u64,
+            hvm__create_erased() -> u64,
 
             // std functions
             hvm__increment_cost(ctx) -> void,
@@ -24,8 +32,16 @@ impl<'a> Codegen<'a> {
             hvm__llvm_and(bool, bool) -> bool,
         });
     }
-    
+
     std_function! { hvm__create_function(fn_id, ptr) -> u64 }
+    std_function! { hvm__create_constructor(fn_id, ptr) -> u64 }
+    std_function! { hvm__create_app(position) -> u64 }
+    std_function! { hvm__create_lam(position) -> u64 }
+    std_function! { hvm__create_var(position) -> u64 }
+    std_function! { hvm__create_f60(value) -> u64 }
+    std_function! { hvm__create_u60(value) -> u64 }
+    std_function! { hvm__create_binary(operand, position) -> u64 }
+    std_function! { hvm__create_erased() -> u64 }
 
     std_function! { hvm__increment_cost(ctx) -> void }
     std_function! { hvm__get_term(ctx) -> u64 }
@@ -42,6 +58,10 @@ impl<'a> Codegen<'a> {
 
     pub fn u64(&self, value: u64) -> BasicValueEnum {
         self.context.i64_type().const_int(value, false).into()
+    }
+
+    pub fn f64(&self, value: f64) -> BasicValueEnum {
+        self.context.f64_type().const_float(value).into()
     }
 
     /// Call a function from the HVM runtime, that passes the context as the first argument.
