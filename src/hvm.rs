@@ -11,6 +11,8 @@ use crate::eval::{Context, Control, Eval};
 use crate::ir::rule::RuleGroup;
 use crate::llvm::bridge::Bridge;
 
+pub mod llvm;
+
 type StrictMap = &'static [bool];
 
 pub fn setup_precomp(book: RuleBook, groups: FxHashMap<String, RuleGroup>) {

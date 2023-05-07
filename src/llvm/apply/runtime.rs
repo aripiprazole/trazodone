@@ -90,7 +90,9 @@ impl<'a> Codegen<'a> {
 
         self.builder
             .build_direct_call(
-                self.module.get_function(name).unwrap(),
+                self.module
+                    .get_function(name)
+                    .unwrap_or_else(|| panic!("Function {name} not found in module")),
                 complete_args.as_ref(),
                 "",
             )
@@ -117,7 +119,9 @@ impl<'a> Codegen<'a> {
 
         self.builder
             .build_direct_call(
-                self.module.get_function(name).unwrap(),
+                self.module
+                    .get_function(name)
+                    .unwrap_or_else(|| panic!("Function {name} not found in module")),
                 complete_args.as_ref(),
                 "",
             )

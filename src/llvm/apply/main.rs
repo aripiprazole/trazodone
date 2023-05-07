@@ -24,7 +24,6 @@ impl<'a> Codegen<'a> {
         ctx.set_name("ctx");
 
         // Build entry
-        println!("DEBUG: {bb}"); // TODO: remove me
         self.ctx = Some(ctx);
         self.build_basic_block(function, bb);
 

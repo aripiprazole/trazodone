@@ -26,7 +26,7 @@ pub fn run_eval(args: EvalArgs) {
     });
     let main = args.main.clone().unwrap_or("Main".into());
 
-    setup_eval_environment(&code);
+    setup_eval_environment(&code, !args.use_eval);
 
     let native_functions = Vec::new();
     let (norm, cost, time) =
@@ -77,7 +77,7 @@ pub(crate) fn ir_codegen_book(book: &RuleBook, global: Box<GlobalContext>) -> Fx
         .collect()
 }
 
-fn setup_eval_environment(code: &str) {
+fn setup_eval_environment(code: &str, use_llvm: bool) {
     let mut cli = Cli::command();
     let file = match hvm::language::syntax::read_file(code) {
         Ok(file) => file,
@@ -93,5 +93,9 @@ fn setup_eval_environment(code: &str) {
     let global = setup_global_context(&book);
     let groups = ir_codegen_book(&book, global);
 
-    crate::hvm::setup_precomp(book, groups);
+    if use_llvm {
+        crate::hvm::llvm::setup_llvm_precomp(book, groups).unwrap()
+    } else {
+        crate::hvm::setup_precomp(book, groups)
+    }
 }
