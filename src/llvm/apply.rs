@@ -1,22 +1,21 @@
 use std::error::Error;
 
 use fxhash::FxHashMap;
-
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::values::BasicValueEnum;
 
+pub mod agent;
 pub mod bb;
 pub mod functions;
 pub mod instruction;
 pub mod main;
+pub mod position;
 pub mod runtime;
 pub mod term;
 pub mod terminator;
 pub mod value;
-pub mod agent;
-pub mod position;
 
 pub struct Codegen<'a> {
     pub context: &'a Context,
@@ -62,11 +61,13 @@ impl<'a> Codegen<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::cli::eval::{ir_codegen_book, setup_global_context};
-    use crate::ir::rule::RuleGroup;
     use fxhash::FxHashMap;
     use inkwell::OptimizationLevel;
+
+    use crate::cli::eval::{ir_codegen_book, setup_global_context};
+    use crate::ir::rule::RuleGroup;
+
+    use super::*;
 
     #[test]
     pub fn it_works() {
@@ -76,6 +77,8 @@ mod tests {
 
         codegen_entry(&mut codegen, &book["Main"]);
         codegen_entry(&mut codegen, &book["Add"]);
+
+        println!("{}", codegen.module.print_to_string().to_string_lossy());
 
         let _execution_engine = codegen
             .module
@@ -94,8 +97,6 @@ mod tests {
             println!("{}", codegen.module.print_to_string().to_string_lossy());
             panic!("Module is broken: {}", err.to_string_lossy());
         });
-
-        println!("{}", codegen.module.print_to_string().to_string_lossy());
     }
 
     fn setup_book() -> FxHashMap<String, RuleGroup> {

@@ -22,10 +22,12 @@ macro_rules! std_llvm_type {
 macro_rules! build_std_functions {
     ($codegen:expr, {$($name:ident($($x:tt),* $(,)?) -> $ret:tt),+ $(,)?}) => {{
         $({
-            let name = stringify!($name);
-            let ret = crate::llvm::apply::functions::std_llvm_type!($codegen, $ret);
-            let args = &[$(crate::llvm::apply::functions::std_llvm_type!($codegen, $x).into()),*];
-            $codegen.module.add_function(name, ret.fn_type(args, false), None);
+            if $codegen.module.get_function(stringify!($name)).is_none() {
+                let name = stringify!($name);
+                let ret = crate::llvm::apply::functions::std_llvm_type!($codegen, $ret);
+                let args = &[$(crate::llvm::apply::functions::std_llvm_type!($codegen, $x).into()),*];
+                $codegen.module.add_function(name, ret.fn_type(args, false), None);
+            }
         })+
     }};
 }
