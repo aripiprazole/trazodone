@@ -31,6 +31,9 @@ impl<'a> Codegen<'a> {
             hvm__llvm_eq(u64, u64) -> bool,
             hvm__llvm_or(bool, bool) -> bool,
             hvm__llvm_and(bool, bool) -> bool,
+
+            // instructions
+            hvm__free(ctx, u64, u64) -> void,
         });
     }
 
@@ -57,6 +60,8 @@ impl<'a> Codegen<'a> {
     std_function! { hvm__llvm_eq(a, b) -> u64 }
     std_function! { hvm__llvm_or(a, b) -> u64 }
     std_function! { hvm__llvm_and(a, b) -> u64 }
+
+    std_function! { hvm__free(ctx, position, arity) -> void }
 
     pub fn u64(&self, value: u64) -> BasicValueEnum {
         self.context.i64_type().const_int(value, false).into()

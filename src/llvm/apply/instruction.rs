@@ -1,4 +1,4 @@
-use crate::ir::apply::{Instruction, Let, Link};
+use crate::ir::apply::{Free, Instruction, Let, Link};
 
 use super::Codegen;
 
@@ -13,7 +13,7 @@ impl<'a> Codegen<'a> {
             }
 
             Instruction::Collect(_collect_instruction) => {}
-            Instruction::Free(_free_instruction) => {}
+            Instruction::Free(free_instruction) => self.build_free(free_instruction),
             Instruction::Link(link_instruction) => self.build_link(link_instruction),
             Instruction::Let(let_instruction) => self.build_let(let_instruction),
 
@@ -26,6 +26,13 @@ impl<'a> Codegen<'a> {
                 super::erased_step!(Instruction::Return)
             }
         }
+    }
+
+    pub fn build_free(&mut self, instruction: Free) {
+        let position = self.build_term(instruction.position);
+        let arity = self.u64(instruction.arity);
+
+        self.hvm__free(position, arity);
     }
 
     pub fn build_link(&mut self, instruction: Link) {
