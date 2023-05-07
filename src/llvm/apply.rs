@@ -74,16 +74,20 @@ mod tests {
         let context = Context::create();
         let mut codegen = Codegen::new(&context).unwrap();
 
-        let add_fn = book.get("Add").unwrap();
-        let add_fn_ir = add_fn.hvm_apply.clone().into_control_flow_graph();
-
-        codegen.initialize_std_functions();
-        codegen.build_apply_function(add_fn, add_fn_ir);
+        codegen_entry(&mut codegen, &book["Main"]);
+        codegen_entry(&mut codegen, &book["Add"]);
 
         let _execution_engine = codegen
             .module
             .create_jit_execution_engine(OptimizationLevel::None)
             .expect("Could not create execution engine");
+    }
+
+    fn codegen_entry(codegen: &mut Codegen, fun: &RuleGroup) {
+        let ir = fun.hvm_apply.clone().into_control_flow_graph();
+
+        codegen.initialize_std_functions();
+        codegen.build_apply_function(fun, ir);
 
         // Verify the LLVM module integrity
         codegen.module.verify().unwrap_or_else(|err| {
