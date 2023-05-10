@@ -77,6 +77,7 @@ pub fn create_llvm_precomp(id: u64, smap: &'static [bool], group: RuleGroup) -> 
         .unwrap();
 
     codegen.initialize_std_functions();
+    codegen.register_functions_on_jit(&engine);
 
     let hvm_apply = codegen.build_apply_function(&group, hvm_apply);
 

@@ -1,6 +1,7 @@
+use inkwell::execution_engine::ExecutionEngine;
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, InstructionValue};
 
-use crate::llvm::apply::functions::{build_std_functions, std_function};
+use crate::llvm::apply::functions::{build_std_functions, register_jit_function, std_function};
 use crate::llvm::apply::Codegen;
 
 impl<'a> Codegen<'a> {
@@ -35,6 +36,36 @@ impl<'a> Codegen<'a> {
             // instructions
             hvm__free(ctx, u64, u64) -> void,
         });
+    }
+
+    pub fn register_functions_on_jit(&mut self, engine: &ExecutionEngine) {
+        use crate::runtime::*;
+
+        register_jit_function!(self, engine, hvm__create_function);
+        register_jit_function!(self, engine, hvm__create_constructor);
+        register_jit_function!(self, engine, hvm__create_app);
+        register_jit_function!(self, engine, hvm__create_lam);
+        register_jit_function!(self, engine, hvm__create_var);
+        // register_jit_function!(self, engine, hvm__create_f60);
+        register_jit_function!(self, engine, hvm__create_u60);
+        register_jit_function!(self, engine, hvm__create_binary);
+        register_jit_function!(self, engine, hvm__create_erased);
+
+        register_jit_function!(self, engine, hvm__get_host_value);
+        register_jit_function!(self, engine, hvm__increment_cost);
+        register_jit_function!(self, engine, hvm__get_term);
+        register_jit_function!(self, engine, hvm__load_argument);
+        register_jit_function!(self, engine, hvm__link);
+        register_jit_function!(self, engine, hvm__get_loc);
+        register_jit_function!(self, engine, hvm__get_ext);
+        register_jit_function!(self, engine, hvm__get_number);
+        register_jit_function!(self, engine, hvm__get_tag);
+        register_jit_function!(self, engine, hvm__alloc);
+        register_jit_function!(self, engine, hvm__llvm_eq);
+        register_jit_function!(self, engine, hvm__llvm_or);
+        register_jit_function!(self, engine, hvm__llvm_and);
+
+        register_jit_function!(self, engine, hvm__free);
     }
 
     std_function! { hvm__create_function(fn_id, ptr) -> u64 }

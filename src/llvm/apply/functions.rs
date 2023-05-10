@@ -32,6 +32,13 @@ macro_rules! build_std_functions {
     }};
 }
 
+macro_rules! register_jit_function {
+    ($codegen:expr, $engine:expr, $name:expr) => {{
+        let fun = $codegen.module.get_function(stringify!($name)).unwrap();
+        $engine.add_global_mapping(&fun, $name as usize);
+    }};
+}
+
 macro_rules! std_function {
     ($name:ident(ctx) -> u64) => {
         #[allow(clippy::needless_lifetimes)]
@@ -74,5 +81,6 @@ macro_rules! std_function {
 }
 
 pub(crate) use std_function;
+pub(crate) use register_jit_function;
 pub(crate) use build_std_functions;
 pub(crate) use std_llvm_type;
